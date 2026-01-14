@@ -627,6 +627,7 @@ class MainWindow(QMainWindow):
         self.editor = AScriptEditor()
         self.highlighter = AScriptHighlighter(self.editor.document())
         self.preview = QWebEngineView()
+        self.preview.setContextMenuPolicy(Qt.NoContextMenu)
 
         splitter.addWidget(self.editor)
         splitter.addWidget(self.preview)
@@ -940,6 +941,22 @@ class MainWindow(QMainWindow):
         cursor.endEditBlock()
         self.editor.setTextCursor(cursor)
 
+
+    def sanitize_traceback(self, exc: Exception) -> str:
+        tb = traceback.extract_tb(exc.__traceback__)
+        lines = []
+
+        for frame in tb:
+            filename = frame.filename.split("\\")[-1].split("/")[-1]
+            lines.append(f"{filename}:{frame.lineno} → {frame.name}")
+
+        return (
+            "Error chain:\n"
+            + "\n".join(lines)
+            + f"\n\n{type(exc).__name__}: {exc}"
+        )
+
+
     def update_preview(self):
         source = self.editor.toPlainText()
 
@@ -948,12 +965,38 @@ class MainWindow(QMainWindow):
             self.last_preview_path = out_path
             self.preview.setUrl(QUrl.fromLocalFile(out_path))
 
-        except Exception:
+        except Exception as e:
+            safe_tb = self.sanitize_traceback(e)
             error_html = f"""
-            <html><body style='background:#1e1e1e;color:#ff7777;padding:1rem;'>
-            <h2>Compiler error:</h2>
-            <pre>{html.escape(traceback.format_exc())}</pre>
-            </body></html>
+            <html>
+            <body style="background:#1e1e1e;color:#e6e6e6;padding:1.5rem;font-family:Segoe UI, Arial;">
+            <h2 style="color:#ff7777;">Compiler Error</h2>
+
+            <p>
+                The compiler stopped because it encountered invalid annaScript syntax.
+            </p>
+
+            <ul>
+                <li>Check for missing brackets, macros, or keywords</li>
+                <li>Make sure all macros are properly closed</li>
+                <li>Verify indentation and nesting</li>
+            </ul>
+
+            <details style="margin-top:1rem;">
+                <summary style="cursor:pointer;color:#ffaaaa;">
+                Show technical details
+                </summary>
+                <pre style="background:#111;padding:0.75rem;border-radius:4px;color:#ff9999;">
+{html.escape(safe_tb)}
+                </pre>
+            </details>
+
+            <p style="margin-top:1rem;font-size:0.9em;color:#bbbbbb;">
+                If the error persists, contact the developer via
+                <b>Help → Report a Bug</b>.
+            </p>
+            </body>
+            </html>
             """
             self.preview.setHtml(error_html)
 
@@ -1066,7 +1109,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
 
-        version_label = QLabel("v1.0.0", dlg)
+        version_label = QLabel("v1.0.1", dlg)
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
 
