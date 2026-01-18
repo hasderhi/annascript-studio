@@ -59,6 +59,8 @@ class FindReplaceDialog(QDialog):
             }
             QLabel {
                 font-size: 13px;
+                background: #2B2B2B;
+                color: #ffffff;
             }
             QLineEdit {
                 background: #1E1E1E;
@@ -194,7 +196,7 @@ class RibbonGroup(QWidget):
 
         label = QLabel(title)
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 10px; color: #ffffff; margin-top: 2px;")
+        label.setStyleSheet("font-size: 10px; color: #ffffff; margin-top: 2px; background: #2B2B2B")
         layout.addWidget(label)
 
         self.setStyleSheet("""
@@ -693,6 +695,8 @@ class MainWindow(QMainWindow):
 
         self.update_window_title()
 
+        self.open_file_from_args()
+
         
 
 
@@ -811,6 +815,27 @@ class MainWindow(QMainWindow):
 
         self.document_modified = False
         self.update_window_title()
+
+        
+    def open_file_from_args(self):
+        if len(sys.argv) < 2:
+            return
+
+        path = sys.argv[1]
+
+        if not os.path.isfile(path):
+            return
+
+        if not self.maybe_save():
+            return
+
+        self.current_file = path
+        with open(path, "r", encoding="utf8") as f:
+            self.editor.setPlainText(f.read())
+
+        self.document_modified = False
+        self.update_window_title()
+    
 
 
     def export_file(self):
@@ -1051,7 +1076,7 @@ The following part of the license applies to both<br>
 
 <b>MIT License</b><br><br>
 
-Copyright (c) 2025 <i>Tobias Kisling (Annabeth / tk_dev / hasderhi)</i><br><br>
+Copyright (c) 2025-2026 <i>Tobias Kisling (Annabeth / tk_dev / hasderhi)</i><br><br>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy<br>
 of this software and associated documentation files (the "Software"), to deal<br>
@@ -1109,7 +1134,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
 
-        version_label = QLabel("v1.0.1", dlg)
+        version_label = QLabel("v1.0.2", dlg)
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
 
@@ -1151,7 +1176,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label_an.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label_an)
 
-        version_label_an = QLabel("v1.0.0", dlg)
+        version_label_an = QLabel("v1.0.1", dlg)
         version_label_an.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label_an)
 
@@ -1195,6 +1220,57 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
+
+    app.setStyleSheet("""
+QMainWindow, QWidget {
+    background-color: #202020;
+    color: #ffffff;
+}
+""")
+    
+
+    
+    # custom scrollbar because PySide defaults to a very 1995 one if global styles are overwritten
+    app.setStyleSheet("""QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 15px;
+    margin: 0px;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: transparent;
+    height: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: #444444;
+    min-height: 20px;
+    min-width: 20px;
+    border-radius: 5px;
+    margin: 2px
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+    background: #666666;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
+    height: 0px;
+    width: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}""")
+
+
     win = MainWindow()
     win.show()
     app.exec()
