@@ -777,7 +777,13 @@ class MainWindow(QMainWindow):
 
 
     def new_file(self):
-        subprocess.Popen([sys.executable, sys.argv[0]])
+        if getattr(sys, "frozen", False):
+            # Build > relaunch exe without args
+            subprocess.Popen([sys.executable])
+        else:
+            # Normal Python > relaunch script with interpreter
+            subprocess.Popen([sys.executable, sys.argv[0]])
+
 
     def save_file(self):
         if not self.current_file:
@@ -821,7 +827,8 @@ class MainWindow(QMainWindow):
         if len(sys.argv) < 2:
             return
 
-        path = sys.argv[1]
+        # Normalize & absolutize path
+        path = os.path.abspath(sys.argv[1])
 
         if not os.path.isfile(path):
             return
@@ -830,11 +837,12 @@ class MainWindow(QMainWindow):
             return
 
         self.current_file = path
-        with open(path, "r", encoding="utf8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             self.editor.setPlainText(f.read())
 
         self.document_modified = False
         self.update_window_title()
+
     
 
 
