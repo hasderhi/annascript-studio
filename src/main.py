@@ -1142,7 +1142,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
 
-        version_label = QLabel("v1.0.2", dlg)
+        version_label = QLabel("v1.0.3", dlg)
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
 
