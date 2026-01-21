@@ -174,3 +174,41 @@ td {
     margin: 1.2rem 0;
     border-radius: 4px;
 }
+
+/* Warning: This might break if you use a fancy font */
+
+.overline {
+    display: inline-block;
+    border-top: 1.5px solid;
+    line-height: 1.1;
+    margin-top: 0.2em;
+    padding-top: 0px;
+    vertical-align: bottom;
+    margin-left: -2px; 
+}
+
+.overline sup, 
+.overline sub {
+    font-size: 0.7em;
+    vertical-align: baseline;
+    position: relative;
+}
+
+.overline sup { bottom: 0.6em; }
+.overline sub { top: 0.3em; }
+
+.frac {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 0.85em;
+}
+
+.frac > span {
+    display: block;
+    padding: 0.1em 0.2em;
+}
+
+.frac span.bottom {
+    border-top: 1.5px solid;
+}

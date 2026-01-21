@@ -1,3 +1,5 @@
+DO_NOT_CHECK_FOR_UPDATES = False
+
 import sys
 import html
 import traceback
@@ -5,8 +7,9 @@ import tempfile
 import os
 import re
 import webbrowser
-import subprocess, sys
-
+import subprocess
+import requests
+from packaging.version import Version
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
@@ -16,13 +19,14 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
-    QCursor
+    QCursor, QAction
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
     QHBoxLayout, QTabBar, QStackedWidget, QToolButton, QSizePolicy,
     QLabel, QGridLayout, QSplitter, QFileDialog, QDialog, 
-    QLineEdit, QPushButton, QMessageBox
+    QLineEdit, QPushButton, QMessageBox, QTabWidget, QTableWidget,
+    QTableWidgetItem, QMenu
 )
 from compiler_api import (
     render_to_tempfile, 
@@ -39,6 +43,43 @@ def resource_path(relative_path: str) -> str:
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
+def get_latest_version(repo_owner, repo_name):
+    headers = {
+        "User-Agent": "Annascript-Studio-Updater"
+    }
+    try:
+        if not DO_NOT_CHECK_FOR_UPDATES:
+            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+            response = requests.get(url, timeout=(3.05, 5), headers=headers)
+            response.raise_for_status()
+            return response.json()["tag_name"]
+        else:
+            print("[ascript] Checking for updates is disabled, skipping...")
+            return None
+    except:
+        print("[ascript] Could not determine latest release, skipping...")
+        return None
+
+update_available = False
+CURRENT_VERSION = "v1.1.0"
+CURRENT_ANNASCRIPT_VERSION = "v1.1.0"
+
+
+LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
+
+if LATEST_VERSION != None:
+    if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
+        print(f"[ascript] Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
+        update_available = True
+    else:
+        print(f"[ascript] {CURRENT_VERSION} is the newest version")
+        update_available = False
+
+
+
+
+
 
 
 
@@ -370,8 +411,8 @@ class RibbonMenu(QWidget):
             ["GitHub"]
         ])
         about_group = RibbonGroup("About", [
-            ["About this Application", "License"],
-            ["Developer Website", "Developer GitHub"]
+            ["About this Application", "License", "Symbol Reference"],
+            ["Developer Website", "Developer GitHub", "Latest Release"]
         ])
 
         layout.addWidget(help_group)
@@ -386,8 +427,10 @@ class RibbonMenu(QWidget):
 
         about_group.buttons["About this Application"].clicked.connect(self.help_ops["show_about"])
         about_group.buttons["License"].clicked.connect(self.help_ops["show_license"])
+        about_group.buttons["Symbol Reference"].clicked.connect(self.help_ops["show_symbol_ref"])
         about_group.buttons["Developer Website"].clicked.connect(lambda: open_url("https://tk-dev-software.com"))
         about_group.buttons["Developer GitHub"].clicked.connect(lambda: open_url("https://github.com/hasderhi/"))
+        about_group.buttons["Latest Release"].clicked.connect(lambda: open_url("https://github.com/hasderhi/annascript-studio/releases/latest"))
 
         return tab
     
@@ -613,6 +656,256 @@ class AScriptEditor(QPlainTextEdit):
 
 
 
+class FilterableTable(QTableWidget):
+    def __init__(self, rows):
+        super().__init__(len(rows), 3)
+        self.rows_data = rows
+
+        self.setHorizontalHeaderLabels(["Shortcut", "Symbol", "Description"])
+        self.verticalHeader().setVisible(False)
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.setSelectionBehavior(QTableWidget.SelectRows)
+        self.setAlternatingRowColors(True)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._context_menu)
+
+        self._populate(rows)
+        self.resizeColumnsToContents()
+        self.horizontalHeader().setStretchLastSection(True)
+
+    def _populate(self, rows):
+        self.setRowCount(len(rows))
+        for r, (a, b, c) in enumerate(rows):
+            self.setItem(r, 0, QTableWidgetItem(a))
+            self.setItem(r, 1, QTableWidgetItem(b))
+            self.setItem(r, 2, QTableWidgetItem(c))
+
+    def filter(self, text):
+        text = text.lower()
+        for row in range(self.rowCount()):
+            visible = any(
+                text in self.item(row, col).text().lower()
+                for col in range(3)
+            )
+            self.setRowHidden(row, not visible)
+
+    def mouseDoubleClickEvent(self, event):
+        row = self.currentRow()
+        if row >= 0:
+            QApplication.clipboard().setText(self.item(row, 1).text())
+        super().mouseDoubleClickEvent(event)
+
+    def _context_menu(self, pos):
+        row = self.currentRow()
+        if row < 0:
+            return
+
+        menu = QMenu(self)
+        copy_shortcut = QAction("Copy Shortcut", self)
+        copy_symbol = QAction("Copy Symbol", self)
+        copy_desc = QAction("Copy Description", self)
+
+        copy_shortcut.triggered.connect(
+            lambda: QApplication.clipboard().setText(self.item(row, 0).text())
+        )
+        copy_symbol.triggered.connect(
+            lambda: QApplication.clipboard().setText(self.item(row, 1).text())
+        )
+        copy_desc.triggered.connect(
+            lambda: QApplication.clipboard().setText(self.item(row, 2).text())
+        )
+
+        menu.addAction(copy_shortcut)
+        menu.addAction(copy_symbol)
+        menu.addAction(copy_desc)
+        menu.exec(self.viewport().mapToGlobal(pos))
+
+
+class SymbolReferenceDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Symbol Reference")
+        self.resize(760, 560)
+
+        layout = QVBoxLayout(self)
+
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search shortcut, symbol, or description…")
+        self.search.textChanged.connect(self._filter_all)
+        layout.addWidget(self.search)
+
+        self.tabs = QTabWidget()
+        layout.addWidget(self.tabs)
+
+        self.tables = []
+        self._add_tab("Math & Logic", self.math_symbols())
+        self._add_tab("Greek (lowercase)", self.greek_lower())
+        self._add_tab("Greek (uppercase)", self.greek_upper())
+        self._add_tab("General", self.general_symbols())
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn, alignment=Qt.AlignRight)
+
+    def _add_tab(self, name, data):
+        table = FilterableTable(data)
+        self.tables.append(table)
+        self.tabs.addTab(table, name)
+
+    def _filter_all(self, text):
+        for table in self.tables:
+            table.filter(text)
+
+    # this is going to be a real pain to update.
+    # going to replace this in the next update.
+    def math_symbols(self):
+        return [
+            ("<->", "↔", "Logical equivalence / bidirectional arrow"),
+            ("->", "→", "Right arrow"),
+            ("=>", "⇒", "Implication"),
+            ("<=>", "⇔", "Logical equivalence"),
+            ("<=", "≤", "Less than or equal"),
+            (">=", "≥", "Greater than or equal"),
+            ("!=", "≠", "Not equal"),
+            ("~ / ~~", "≈", "Approximately equal"),
+            ("+-", "±", "Plus-minus"),
+            ("-+", "∓", "Minus-plus"),
+            ("<x>", "×", "Multiplication (with cross)"),
+            ("<*>", "•", "Multiplication (with dot)"),
+
+            (r"\frac{x}{y}", "x / y", "Fraction"),
+            (r"\bar{x}", "x", "Bar over x"),
+
+            (r"\infty", "∞", "Infinity"),
+            (r"\propto", "∝", "Proportional to"),
+
+            (r"\forall", "∀", "For all"),
+            (r"\exists", "∃", "There exists"),
+            (r"\neg", "¬", "Logical NOT"),
+
+            (r"\in", "∈", "Element of"),
+            (r"\notin", "∉", "Not element of"),
+            (r"\cup", "∪", "Union"),
+            (r"\cap", "∩", "Intersection"),
+            (r"\emptyset", "∅", "Empty set"),
+
+            (r"\sum", "∑", "Sum"),
+            (r"\prod", "∏", "Product"),
+            (r"\int", "∫", "Integral"),
+            (r"\partial", "∂", "Partial derivative"),
+            (r"\nabla", "∇", "Nabla / gradient"),
+
+            (r"\N", "ℕ", "Natural numbers"),
+            (r"\Z", "ℤ", "Integers"),
+            (r"\Q", "ℚ", "Rational numbers"),
+            (r"\R", "ℝ", "Real numbers"),
+            (r"\C", "ℂ", "Complex numbers"),
+            (r"\P", "ℙ", "Probability space"),
+            (r"\N0", "ℕ₀", "Natural numbers incl. zero"),
+            (r"\R+", "ℝ⁺", "Positive real numbers"),
+            (r"\Z-", "ℤ⁻", "Negative integers"),
+
+            (r"\subset", "⊂", "Subset"),
+            (r"\supset", "⊃", "Superset"),
+            (r"\subseteq", "⊆", "Subset or equal"),
+            (r"\supseteq", "⊇", "Superset or equal"),
+
+            (r"\therefore", "∴", "Therefore"),
+            (r"\because", "∵", "Because"),
+            (r"\degree", "°", "Degree"),
+
+            (r"\equilibrium", "⇌", "Chemical equilibrium"),
+            (r"\benzene", "⌬", "Benzene ring"),
+            (r"\std", "⦵", "Standard state"),
+            (r"\nuclear", "☢", "Radioactive / nuclear"),
+        ]
+
+    def greek_lower(self):
+        return [(r"\alpha", "α", "Greek letter alpha"),
+                (r"\beta", "β", "Greek letter beta"),
+                (r"\gamma", "γ", "Greek letter gamma"),
+                (r"\delta", "δ", "Greek letter delta"),
+                (r"\epsilon", "ε", "Greek letter epsilon"),
+                (r"\zeta", "ζ", "Greek letter zeta"),
+                (r"\eta", "η", "Greek letter eta"),
+                (r"\theta", "θ", "Greek letter theta"),
+                (r"\iota", "ι", "Greek letter iota"),
+                (r"\kappa", "κ", "Greek letter kappa"),
+                (r"\lambda", "λ", "Greek letter lambda"),
+                (r"\mu", "μ", "Greek letter mu"),
+                (r"\nu", "ν", "Greek letter nu"),
+                (r"\xi", "ξ", "Greek letter xi"),
+                (r"\omicron", "ο", "Greek letter omicron"),
+                (r"\pi", "π", "Greek letter pi"),
+                (r"\rho", "ρ", "Greek letter rho"),
+                (r"\sigma", "σ", "Greek letter sigma"),
+                (r"\tau", "τ", "Greek letter tau"),
+                (r"\upsilon", "υ", "Greek letter upsilon"),
+                (r"\phi", "φ", "Greek letter phi"),
+                (r"\chi", "χ", "Greek letter chi"),
+                (r"\psi", "ψ", "Greek letter psi"),
+                (r"\omega", "ω", "Greek letter omega")]
+
+    def greek_upper(self):
+        return [(r"\Alpha", "Α", "Greek capital alpha"),
+                (r"\Beta", "Β", "Greek capital beta"),
+                (r"\Gamma", "Γ", "Greek capital gamma"),
+                (r"\Delta", "Δ", "Greek capital delta"),
+                (r"\Epsilon", "Ε", "Greek capital epsilon"),
+                (r"\Zeta", "Ζ", "Greek capital zeta"),
+                (r"\Eta", "Η", "Greek capital eta"),
+                (r"\Theta", "Θ", "Greek capital theta"),
+                (r"\Iota", "Ι", "Greek capital iota"),
+                (r"\Kappa", "Κ", "Greek capital kappa"),
+                (r"\Lambda", "Λ", "Greek capital lambda"),
+                (r"\Mu", "Μ", "Greek capital mu"),
+                (r"\Nu", "Ν", "Greek capital nu"),
+                (r"\Xi", "Ξ", "Greek capital xi"),
+                (r"\Omicron", "Ο", "Greek capital omicron"),
+                (r"\Pi", "Π", "Greek capital pi"),
+                (r"\Rho", "Ρ", "Greek capital rho"),
+                (r"\Sigma", "Σ", "Greek capital sigma"),
+                (r"\Tau", "Τ", "Greek capital tau"),
+                (r"\Upsilon", "Υ", "Greek capital upsilon"),
+                (r"\Phi", "Φ", "Greek capital phi"),
+                (r"\Chi", "Χ", "Greek capital chi"),
+                (r"\Psi", "Ψ", "Greek capital psi"),
+                (r"\Omega", "Ω", "Greek capital omega")]
+
+    def general_symbols(self):
+        return [
+            (r"\copy", "©", "Copyright"),
+            (r"\reg", "®", "Registered trademark"),
+            (r"\tm", "™", "Trademark"),
+            (r"\sm", "℠", "Service mark"),
+            (r"\pcopy", "℗", "Phonogram copyright"),
+            (r"\cmd", "⌘", "Command key"),
+            (r"\opt", "⌥", "Option key"),
+            (r"\shift", "⇧", "Shift key"),
+            (r"\enter", "⏎", "Enter key"),
+            (r"\back", "⌫", "Backspace"),
+            (r"\blank", "␣", "Space"),
+            (r"\settings", "⚙", "Settings"),
+            (r"\para", "¶", "Paragraph mark"),
+            (r"\dag", "†", "Dagger"),
+            (r"\ddag", "‡", "Double dagger"),
+            (r"\edit", "✎", "Edit"),
+            (r"\ditto", "〃", "Ditto mark"),
+            (r"\wat", "‽", "Interrobang"),
+            (r"\sep", "⁂", "Asterism"),
+            (r"\leaf", "❦", "Floral heart"),
+            (r"\ok", "✓", "Success"),
+            (r"\fail", "✗", "Failure"),
+            (r"\warn", "⚠", "Warning"),
+            (r"\mail", "✉", "Mail"),
+            (r"\star", "★", "Star"),
+            (r"\menu", "☰", "Menu"),
+            (r"\power", "⏻", "Power"),
+            (r"\folder", "🗀", "Folder"),
+        ]
+
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -677,7 +970,8 @@ class MainWindow(QMainWindow):
         }
         help_ops = {
             "show_about": self.show_about,
-            "show_license": self.show_license
+            "show_license": self.show_license,
+            "show_symbol_ref": self.show_symbol_ref,
         }
 
         self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, export_ops, help_ops)
@@ -697,8 +991,29 @@ class MainWindow(QMainWindow):
 
         self.open_file_from_args()
 
-        
+        if update_available:
+            self.show_update_dialog(LATEST_VERSION)
 
+        
+    def show_update_dialog(self, LATEST_VERSION):
+        print("[aScript] Notifying user...")
+        msg_box = QMessageBox(self)
+        pixmap = QPixmap(resource_path("annascriptstudio.png")).scaled(64, 64) 
+        msg_box.setIconPixmap(pixmap)
+        msg_box.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
+        msg_box.setWindowTitle("Update Available")
+        msg_box.setText(f"A new version ({LATEST_VERSION}) is available!")
+        msg_box.setInformativeText("Would you like to go to the download page?")
+        
+        download_button = msg_box.addButton("Download", QMessageBox.AcceptRole)
+        dismiss_button = msg_box.addButton("Later", QMessageBox.RejectRole)
+        
+        msg_box.setDefaultButton(download_button)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == download_button:
+            webbrowser.open(f"https://github.com/hasderhi/annascript-studio/releases/latest")
+            print("[aScript] User chose to download update, opening browser and continuing with startup...")
 
     def setup_shortcuts(self):
             QShortcut(QKeySequence("Ctrl+N"), self, activated=self.new_file)
@@ -706,6 +1021,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_file)
             QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.save_file_as)
 
+            QShortcut(QKeySequence("Ctrl+U"), self, activated=self.make_underline)
             QShortcut(QKeySequence("Ctrl+B"), self, activated=self.make_bold)
             QShortcut(QKeySequence("Ctrl+I"), self, activated=self.make_italic)
             QShortcut(QKeySequence("Ctrl+Shift+B"), self, activated=self.make_bold_italic)
@@ -917,6 +1233,9 @@ class MainWindow(QMainWindow):
         dlg = FindReplaceDialog(self.editor, replace_mode=True, parent=self)
         dlg.show()
 
+    def make_underline(self):
+        self.wrap_selection("_", "_")
+
     def make_bold(self):
         self.wrap_selection("**", "**")
 
@@ -1120,6 +1439,10 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
 
         dlg.exec()
 
+    def show_symbol_ref(self):
+        dlg = SymbolReferenceDialog()
+        dlg.exec()
+
     def show_about(self):
         dlg = QDialog(self)
         dlg.setWindowTitle("About annaScript Studio")
@@ -1142,7 +1465,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
 
-        version_label = QLabel("v1.0.3", dlg)
+        version_label = QLabel(f"{CURRENT_VERSION}", dlg)
         version_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label)
 
@@ -1184,7 +1507,7 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         title_label_an.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label_an)
 
-        version_label_an = QLabel("v1.0.1", dlg)
+        version_label_an = QLabel(f"{CURRENT_ANNASCRIPT_VERSION}", dlg)
         version_label_an.setAlignment(Qt.AlignCenter)
         layout.addWidget(version_label_an)
 
