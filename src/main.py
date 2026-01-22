@@ -62,8 +62,8 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.1.0"
-CURRENT_ANNASCRIPT_VERSION = "v1.1.0"
+CURRENT_VERSION = "v1.1.1"
+CURRENT_ANNASCRIPT_VERSION = "v1.1.1"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
