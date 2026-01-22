@@ -108,6 +108,8 @@ def parse_inline(text: str) -> str:
     }
 
     GENERAL_SYMBOLS = {
+        "--": "–",
+        "---": "—",
         r"\copy": "©", 
         r"\reg": "®", 
         r"\tm": "™", 
