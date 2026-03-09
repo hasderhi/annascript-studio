@@ -13,13 +13,14 @@ from packaging.version import Version
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
+from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 from PySide6.QtCore import (
     Qt, QTimer, QUrl, QDir
 )
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
-    QCursor, QAction
+    QCursor, QAction, QGuiApplication
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -31,7 +32,8 @@ from PySide6.QtWidgets import (
 from compiler_api import (
     render_to_tempfile, 
     cleanup_instance_directory, 
-    export_standalone_html
+    export_standalone_html,
+    build_standalone_html
 )
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
@@ -62,8 +64,8 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.1.1"
-CURRENT_ANNASCRIPT_VERSION = "v1.1.1"
+CURRENT_VERSION = "v1.1.2"
+CURRENT_ANNASCRIPT_VERSION = "v1.1.2"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
@@ -326,8 +328,8 @@ class RibbonMenu(QWidget):
         layout.setSpacing(8)
 
         font_group = RibbonGroup("Font", [
-            ["Bold", "Italic", "Super", "Code"],
-            ["Bold and Italic", "Highlight","Sub", "Comment"],
+            ["Bold", "Italic", "Underline", "Super", "Center"],
+            ["Bold and Italic", "Code", "Highlight", "Sub", "Comment"],
         ])
 
         clipboard_group = RibbonGroup("Clipboard", [
@@ -368,6 +370,8 @@ class RibbonMenu(QWidget):
         font_group.buttons["Sub"].clicked.connect(self.font_ops["sub"])
         font_group.buttons["Super"].clicked.connect(self.font_ops["super"])
         font_group.buttons["Highlight"].clicked.connect(self.font_ops["highlight"])
+        font_group.buttons["Underline"].clicked.connect(self.font_ops["underline"])
+        font_group.buttons["Center"].clicked.connect(self.font_ops["center"])
         
 
         layout.addWidget(file_group)
@@ -387,12 +391,14 @@ class RibbonMenu(QWidget):
         layout.setSpacing(8)
 
         export_group = RibbonGroup("Export", [
-            ["Export File"],
-            ["Export File as PDF"]
+            ["Export File", "Print"],
+            ["Export File as PDF", "Copy HTML"]
         ])
 
         export_group.buttons["Export File"].clicked.connect(self.export_ops["export"])
         export_group.buttons["Export File as PDF"].clicked.connect(self.export_ops["export_pdf"])
+        export_group.buttons["Print"].clicked.connect(self.export_ops["print"])
+        export_group.buttons["Copy HTML"].clicked.connect(self.export_ops["copy_html"])
 
         layout.addWidget(export_group)
         layout.addStretch()
@@ -955,6 +961,7 @@ class MainWindow(QMainWindow):
             "select_all": self.select_all
         }
         font_ops = {
+            "underline": self.make_underline,
             "bold": self.make_bold,
             "italic": self.make_italic,
             "bold_italic": self.make_bold_italic,
@@ -962,11 +969,14 @@ class MainWindow(QMainWindow):
             "sub": self.make_sub,
             "super": self.make_super,
             "code": self.make_code,
+            "center": self.make_center,
             "comment": self.make_comment,
         }
         export_ops = {
             "export": self.export_file,
             "export_pdf": self.export_file_to_pdf,
+            "print": self.print_document,
+            "copy_html": self.copy_html,
         }
         help_ops = {
             "show_about": self.show_about,
@@ -1164,6 +1174,7 @@ class MainWindow(QMainWindow):
 
     def export_file(self):
         text = self.editor.toPlainText()
+
         outfile, _ = QFileDialog.getSaveFileName(
             self,
             "Export HTML",
@@ -1174,23 +1185,27 @@ class MainWindow(QMainWindow):
         if outfile:
             export_standalone_html(text, outfile)
 
+
     def export_file_to_pdf(self):
         text = self.editor.toPlainText()
 
-        outfile, _ = QFileDialog.getSaveFileName(
+        pdf_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export HTML for PDF conversion",
-            f"{DEFAULT_PATH}/output.html",
-            "HTML Files (*.html)"
+            "Export PDF",
+            f"{DEFAULT_PATH}/output.pdf",
+            "PDF Files (*.pdf)"
         )
 
-        if not outfile:
+        if not pdf_path:
             return
 
-        export_standalone_html(text, outfile)
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+        tmp.close()
 
-        pdf_path = outfile.replace(".html", ".pdf")
-        self.convert_to_pdf(outfile, pdf_path)
+        export_standalone_html(text, tmp.name)
+
+        self.convert_to_pdf(tmp.name, pdf_path)
+
 
     def convert_to_pdf(self, html_path: str, pdf_path: str):
         page = QWebEnginePage()
@@ -1200,13 +1215,55 @@ class MainWindow(QMainWindow):
                 print("[aScript] Failed to load HTML for PDF export.")
                 return
 
+            def finished(_):
+                print(f"[aScript] PDF exported successfully -> {pdf_path}")
+                try:
+                    os.remove(html_path)  # cleanup temp file
+                except OSError:
+                    pass
+
+            page.pdfPrintingFinished.connect(finished)
             page.printToPdf(pdf_path)
-            print(f"[aScript] PDF exported successfully → {pdf_path}")
 
         url = QUrl.fromLocalFile(os.path.abspath(html_path))
         page.loadFinished.connect(handle_load_finished)
         page.load(url)
-    
+
+
+    def print_document(self):
+        try:
+            print("[aScript] Initiating printing dialog...")
+            html = build_standalone_html(self.editor.toPlainText())
+            printer = QPrinter(QPrinter.HighResolution)
+            dialog = QPrintDialog(printer, self)
+            dialog.setWindowTitle("Print Document")
+
+            if dialog.exec() != QPrintDialog.Accepted:
+                return
+
+            self.print_view = QWebEngineView()  # must persist
+
+            def handle_load_finished(ok):
+                if not ok:
+                    print("[aScript] Failed to render document for printing.")
+                    return
+
+                self.print_view.print(printer)
+                print("[aScript] Document sent to printer.")
+
+            self.print_view.loadFinished.connect(handle_load_finished)
+            self.print_view.setHtml(html)
+        except Exception as e:
+            print(f"[aScript] Failed to print document: {e}")
+
+
+    def copy_html(self):
+        html = build_standalone_html(self.editor.toPlainText())
+        QGuiApplication.clipboard().setText(html)
+
+
+
+
     def undo(self):
         self.editor.undo()
 
@@ -1260,7 +1317,9 @@ class MainWindow(QMainWindow):
     def make_super(self):
         self.wrap_selection("^^", "^^")
 
-    
+    def make_center(self):
+        self.wrap_selection("::center\n", "\n::")
+
     def wrap_selection(self, prefix: str, suffix: str):
         cursor = self.editor.textCursor()
         selected_text = cursor.selectedText()
@@ -1363,7 +1422,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
 
         icon_row = QHBoxLayout()
-        icon_row.setSpacing(0)  # no gap
+        icon_row.setSpacing(0)
         icon_row.setContentsMargins(0, 0, 0, 0)
 
         pixmap = QPixmap(resource_path("annascriptstudio.png"))

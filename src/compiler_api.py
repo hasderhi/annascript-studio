@@ -126,3 +126,35 @@ def export_standalone_html(ascript_text: str, output_path: str):
 
     print("[aScript] Standalone export saved to:", output_path)
     return output_path
+
+
+def build_standalone_html(ascript_text: str) -> str:
+    html_path = render_to_tempfile(ascript_text)
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    link_regex = re.compile(
+        r"<link\b[^>]*?rel=['\"]stylesheet['\"][^>]*?href=['\"]([^'\"]+)['\"][^>]*?>",
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    match = link_regex.search(html)
+
+    if not match:
+        print("[aScript] No stylesheet link found.")
+        return html
+
+    css_rel_path = match.group(1)
+    css_abs_path = os.path.join(THEMES_DST, css_rel_path.replace("themes/", "", 1))
+
+    if not os.path.exists(css_abs_path):
+        print("[aScript] Stylesheet missing:", css_abs_path)
+        return html
+
+    with open(css_abs_path, "r", encoding="utf-8") as f:
+        css_content = f.read()
+
+    style_tag = "<style>\n" + css_content + "\n</style>"
+
+    return link_regex.sub(style_tag, html)

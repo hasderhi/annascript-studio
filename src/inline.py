@@ -199,7 +199,7 @@ def parse_inline(text: str) -> str:
         href = html.escape(m.group(2))
         if href.strip().lower().startswith("javascript:"):
             href = "#"
-        return f'<a href="{href}">{label}</a>'
+        return f'<a href="{href}" TARGET="_blank">{label}</a>'
 
     text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', repl_link, text)
 
