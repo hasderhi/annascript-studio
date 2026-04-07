@@ -31,6 +31,82 @@ def render_box(node: Macro) -> str:
     inner = parse_inline(node.content)
     return f'<div class="box {cls}">{title_html}<div class="box-content">{inner}</div></div>'
 
+@register_macro("chart")
+def render_chart(node: Macro) -> str:
+    try:
+        chart_type = html.escape(node.attrs.get("type", ""))
+        title = html.escape(node.attrs.get("title", ""))
+        title_html = f'<div class="chart-title">{title}</div>' if title else ''
+
+        rows = []
+        for line in node.content.split('\n'):
+            line = line.strip()
+            if line.startswith('|') and '|' in line[1:]:
+                cells = [c.strip() for c in line.split('|') if c.strip()]
+                if len(cells) >= 2:
+                    rows.append(cells)
+
+        if chart_type == "pie":
+            chart_html = render_pie_chart(rows)
+        elif chart_type == "bar":
+            chart_html = render_bar_chart(rows)
+        else:
+            chart_html = "<div class='chart-error'>Unsupported chart type</div>"
+        return f'<div class="chart {chart_type}">{title_html}{chart_html}</div>'
+    except Exception as e:
+        f'<div>Error creating chart, please check syntax!</div>'
+    
+
+def render_pie_chart(rows):
+    try:
+        if rows == []:
+            return f'<div>No data provided.</div>'
+        colors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#a55eea", "#feca57", "#ff9ff3"]
+        total = sum(float(row[1]) for row in rows)
+        gradient_stops = []
+        legend_items = []
+        cumulative_percentage = 0
+
+        for i, (label, value) in enumerate(rows):
+            percentage = (float(value) / total) * 100
+            gradient_stops.append(f"{colors[i % len(colors)]} {cumulative_percentage}% {cumulative_percentage + percentage}%")
+            legend_items.append(f'<div class="legend-item"><div class="legend-color" style="background: {colors[i % len(colors)]};"></div>{label} ({percentage:.2f}%)</div>')
+            cumulative_percentage += percentage
+
+        gradient = "conic-gradient(" + ", ".join(gradient_stops) + ")"
+        pie_chart = f'<div class="pie-chart" style="background: {gradient};"></div>'
+        legend = '<div class="legend">' + "".join(legend_items) + "</div>"
+
+        return pie_chart + legend
+    except Exception as e:
+        return f'<div>Error creating chart, check table data!</div>'
+
+def render_bar_chart(rows):
+    try:
+        if rows == []:
+            return f'<div>No data provided.</div>'
+        colors = ["#4ecdc4", "#ff6b6b", "#ffe66d", "#a55eea", "#feca57", "#ff9ff3"]
+        max_value = max(float(row[1]) for row in rows)
+        bars = []
+
+        for i, (label, value) in enumerate(rows):
+            bar_height = (float(value) / max_value) * 100
+            bars.append(f'''
+                <div class="bar-container">
+                    <div class="bar" style="height: {bar_height}%; background: {colors[i % len(colors)]};"></div>
+                    <div class="bar-label">{label}</div>
+                </div>
+            ''')
+
+        bar_chart = f'''
+            <div class="bar-chart">
+                {"".join(bars)}
+            </div>
+        '''
+        return bar_chart
+    except Exception as e:
+        return f'<div>Error creating chart, check table data!</div>'
+
 def render_macro_generic(node: Macro) -> str:
     inner = parse_inline(node.content)
     return f'<div class="{html.escape(node.name)}">{inner}</div>'

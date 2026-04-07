@@ -64,8 +64,8 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.1.2"
-CURRENT_ANNASCRIPT_VERSION = "v1.1.2"
+CURRENT_VERSION = "v1.1.3"
+CURRENT_ANNASCRIPT_VERSION = "v1.1.3"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
@@ -916,7 +916,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("aScript Studio")
+        self.setWindowTitle("annaScript Studio")
         self.resize(1400, 900)
 
         self.current_file = None
@@ -1006,7 +1006,7 @@ class MainWindow(QMainWindow):
 
         
     def show_update_dialog(self, LATEST_VERSION):
-        print("[aScript] Notifying user...")
+        print("[ascript] Notifying user...")
         msg_box = QMessageBox(self)
         pixmap = QPixmap(resource_path("annascriptstudio.png")).scaled(64, 64) 
         msg_box.setIconPixmap(pixmap)
@@ -1023,7 +1023,7 @@ class MainWindow(QMainWindow):
 
         if msg_box.clickedButton() == download_button:
             webbrowser.open(f"https://github.com/hasderhi/annascript-studio/releases/latest")
-            print("[aScript] User chose to download update, opening browser and continuing with startup...")
+            print("[ascript] User chose to download update, opening browser and continuing with startup...")
 
     def setup_shortcuts(self):
             QShortcut(QKeySequence("Ctrl+N"), self, activated=self.new_file)
@@ -1057,7 +1057,7 @@ class MainWindow(QMainWindow):
 
 
     def update_window_title(self):
-        base = "aScript Studio"
+        base = "annaScript Studio"
 
         if not self.current_file:
             if self.document_modified:
@@ -1123,7 +1123,7 @@ class MainWindow(QMainWindow):
 
     def save_file_as(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Save aScript", DEFAULT_PATH, "aScript (*.ascr *.ascript)"
+            self, "Save annaScript", DEFAULT_PATH, "annaScript (*.ascr *.ascript)"
         )
         if not path:
             return
@@ -1136,7 +1136,7 @@ class MainWindow(QMainWindow):
             return
 
         path, _ = QFileDialog.getOpenFileName(
-            self, "Open aScript", DEFAULT_PATH, "aScript (*.ascr *.ascript)"
+            self, "Open annaScript", DEFAULT_PATH, "annaScript (*.ascr *.ascript)"
         )
         if not path:
             return
@@ -1212,11 +1212,11 @@ class MainWindow(QMainWindow):
 
         def handle_load_finished(ok):
             if not ok:
-                print("[aScript] Failed to load HTML for PDF export.")
+                print("[ascript] Failed to load HTML for PDF export.")
                 return
 
             def finished(_):
-                print(f"[aScript] PDF exported successfully -> {pdf_path}")
+                print(f"[ascript] PDF exported successfully -> {pdf_path}")
                 try:
                     os.remove(html_path)  # cleanup temp file
                 except OSError:
@@ -1232,7 +1232,7 @@ class MainWindow(QMainWindow):
 
     def print_document(self):
         try:
-            print("[aScript] Initiating printing dialog...")
+            print("[ascript] Initiating printing dialog...")
             html = build_standalone_html(self.editor.toPlainText())
             printer = QPrinter(QPrinter.HighResolution)
             dialog = QPrintDialog(printer, self)
@@ -1245,16 +1245,16 @@ class MainWindow(QMainWindow):
 
             def handle_load_finished(ok):
                 if not ok:
-                    print("[aScript] Failed to render document for printing.")
+                    print("[ascript] Failed to render document for printing.")
                     return
 
                 self.print_view.print(printer)
-                print("[aScript] Document sent to printer.")
+                print("[ascript] Document sent to printer.")
 
             self.print_view.loadFinished.connect(handle_load_finished)
             self.print_view.setHtml(html)
         except Exception as e:
-            print(f"[aScript] Failed to print document: {e}")
+            print(f"[ascript] Failed to print document: {e}")
 
 
     def copy_html(self):

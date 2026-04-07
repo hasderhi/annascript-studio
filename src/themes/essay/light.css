@@ -216,3 +216,70 @@ td {
 .frac span.bottom {
     border-top: 1.5px solid;
 }
+
+/* Charts */
+
+.pie-chart {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: conic-gradient(
+        #ff6b6b 0% 33%,
+        #4ecdc4 33% 40%,
+        #ffe66d 40% 100%
+    );
+    position: relative;
+    margin: 20px;
+}
+.pie-chart::before {
+    content: "";
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    background: #faf7f2;
+    border-radius: 50%;
+    top: 20px;
+    left: 20px;
+}
+.legend {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+
+
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    height: 200px;
+    gap: 20px;
+    margin: 20px;
+    border-left: 1px solid #000;
+    border-bottom: 1px solid #000;
+    padding-left: 30px;
+}
+.bar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+.bar {
+    width: 50px;
+    transition: height 0.5s;
+}
+.bar-label {
+    margin-top: 10px;
+    text-align: center;
+}

@@ -23,9 +23,9 @@ def _ensure_temp_environment():
     os.makedirs(ROOT_TEMP, exist_ok=True)
 
     if not os.path.exists(THEMES_DST):
-        print("[aScript] Copying theme folder...")
+        print("[ascript] Copying theme folder...")
         shutil.copytree(THEMES_SRC, THEMES_DST)
-        print(f"[aScript] Copied theme folder to {THEMES_DST}")
+        print(f"[ascript] Copied theme folder to {THEMES_DST}")
     else:
         pass
 
@@ -39,7 +39,7 @@ def _cleanup_old_previews():
             try:
                 os.remove(os.path.join(ROOT_TEMP, filename))
             except Exception as e:
-                print("[aScript] Warning: Could not delete old preview:", e)
+                print("[ascript] Warning: Could not delete old preview:", e)
 
 
 def render_to_tempfile(ascript_text: str) -> str:
@@ -59,7 +59,7 @@ def render_to_tempfile(ascript_text: str) -> str:
         f.write(html_out)
 
     elapsed = round((time.time() - start_time) * 1000, 2)
-    print(f"[aScript] wrote {output_path} in {elapsed}ms")
+    print(f"[ascript] wrote {output_path} in {elapsed}ms")
 
     return output_path
 
@@ -70,16 +70,16 @@ def cleanup_instance_directory():
     try:
         if os.path.exists(ROOT_TEMP):
             shutil.rmtree(ROOT_TEMP)
-            print(f"[aScript] Cleaned instance folder {ROOT_TEMP}")
+            print(f"[ascript] Cleaned instance folder {ROOT_TEMP}")
 
         top_level = os.path.dirname(ROOT_TEMP)
 
         if os.path.exists(top_level) and not os.listdir(top_level):
             shutil.rmtree(top_level)
-            print(f"[aScript] Removed empty ascriptstudio root folder {top_level}")
+            print(f"[ascript] Removed empty ascriptstudio root folder {top_level}")
 
     except Exception as e:
-        print("[aScript] Warning: Cleanup failed:", e)
+        print("[ascript] Warning: Cleanup failed:", e)
 
 
 
@@ -99,17 +99,17 @@ def export_standalone_html(ascript_text: str, output_path: str):
     match = link_regex.search(html)
 
     if not match:
-        print("[aScript] No stylesheet link found. Exporting without inline CSS.")
+        print("[ascript] No stylesheet link found. Exporting without inline CSS.")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
-        print("[aScript] Standalone export saved to:", output_path)
+        print("[ascript] Standalone export saved to:", output_path)
         return output_path
 
     css_rel_path = match.group(1)
     css_abs_path = os.path.join(THEMES_DST, css_rel_path.replace("themes/", "", 1))
 
     if not os.path.exists(css_abs_path):
-        print("[aScript] Stylesheet found but missing on disk:", css_abs_path)
+        print("[ascript] Stylesheet found but missing on disk:", css_abs_path)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
         return output_path
@@ -124,7 +124,7 @@ def export_standalone_html(ascript_text: str, output_path: str):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_standalone)
 
-    print("[aScript] Standalone export saved to:", output_path)
+    print("[ascript] Standalone export saved to:", output_path)
     return output_path
 
 
@@ -142,14 +142,14 @@ def build_standalone_html(ascript_text: str) -> str:
     match = link_regex.search(html)
 
     if not match:
-        print("[aScript] No stylesheet link found.")
+        print("[ascript] No stylesheet link found.")
         return html
 
     css_rel_path = match.group(1)
     css_abs_path = os.path.join(THEMES_DST, css_rel_path.replace("themes/", "", 1))
 
     if not os.path.exists(css_abs_path):
-        print("[aScript] Stylesheet missing:", css_abs_path)
+        print("[ascript] Stylesheet missing:", css_abs_path)
         return html
 
     with open(css_abs_path, "r", encoding="utf-8") as f:
