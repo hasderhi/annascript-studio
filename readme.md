@@ -1,7 +1,7 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.1.2-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.1.3-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
 
@@ -79,7 +79,7 @@ This is paragraph two.
 
 #### Formatting
 
-Text formatting works by wrapping text in certain characters. Currently, *annaScript* supports **bold**, *italic* and highlighted texts, `code blocks` and sub/superscript.
+Text formatting works by wrapping text in certain characters. Currently, *annaScript* supports **bold**, *italic*, underline and highlighted texts, `code blocks` and sub/superscript.
 
 ```annascript
 *italic*
@@ -95,6 +95,8 @@ Text formatting works by wrapping text in certain characters. Currently, *annaSc
 ^^super^^
 
 ,,sub,,
+
+_underline_
 ```
 
 #### Links
@@ -168,6 +170,49 @@ Centered text
 ```
 
 These macros are equivalent to CSS classes, which makes it easy to add your own. Simply add a new class to your theme CSS file and use its name inside the macro definition.
+
+#### Charts
+
+Charts in *annaScript* are also macros declared like mentioned above. Currently, there are two types of charts supported:
+
+- **Pie Charts**: are rendered using CSS gradients and include a legend.
+- **Bar Charts**: are also rendered using CSS and currently do not include a legend.
+
+To use charts, first declare a macro using the syntax like above. You'll need to define the type of the macro (pie/bar). You can also set a title shown above the chart.
+
+Then, inside the macro, create a table with two columns (see next chapter for reference). In the first column, define the data label and, in the second column, define the data itself. The data entry must either be a full integer or a float, separated by a dot (".").
+
+**All data entries inside of one pie chart must equal 100, or else the chart will not reflect accurate data.**
+
+```annascript
+::chart type=pie title="My awesome pie chart"
+|Label 1|20.5|
+|Label 2|19.5|
+|Label 3|60.0|
+::
+```
+
+```annascript
+::chart type=bar title="My awesome bar chart"
+|2023|20000|
+|2024|25000|
+|2025|27000|
+::
+```
+
+The compiler will now try and create the selected chart type using the provided data.
+
+If the provided data is faulty, the chart won't be shown and an error message like this will appear instead:
+
+```Error creating chart, check table data!```
+
+If the declared chart type isn't recognized (or if it isn't specified), this error message will be shown:
+
+```Unsupported chart type```
+
+If there is no recognisable data inside the chart macro, this error message will be shown:
+
+```No data provided.```
 
 #### Tables
 
