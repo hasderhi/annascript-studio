@@ -280,3 +280,6 @@ img {
     margin-top: 10px;
     text-align: center;
 }
+.chart-title {
+    width: 200px;
+}
