@@ -1,7 +1,7 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.1.3-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
 
@@ -213,6 +213,35 @@ If the declared chart type isn't recognized (or if it isn't specified), this err
 If there is no recognisable data inside the chart macro, this error message will be shown:
 
 ```No data provided.```
+
+#### Coordinate systems
+
+Coordinate systems in *annaScript* support displaying points, vectors and functions. The declaration is easy and
+follows this structure:
+
+```annaScript
+::coordinates scale=scale title="My coordinate system"
+|label|type|position or expression|domain=start:end|
+::
+```
+
+For example, to display a point, a function and a vector:
+
+```annaScript
+::coordinates scale=25 title="Demonstration"
+|P|point|10,13|
+|f(x)|function|2x**2-1|domain=-10:10|
+|v|vector|20,15|
+::
+```
+
+For functions, the only variable allowed is ```x```. If disallowed characters are used, this error will be shown:
+
+```Error rendering coordinate system, disallowed character(s) in expression!```
+
+If any other syntax error is found:
+
+```Error rendering coordinate system, check syntax/expressions!```
 
 #### Tables
 
