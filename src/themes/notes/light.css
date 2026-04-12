@@ -281,3 +281,13 @@ td {
 .chart-title {
     width: 200px;
 }
+
+/* Coordinate System */
+
+.coord-axis { stroke: #000; }
+
+.coord-grid { stroke: #ccc; }
+
+.coord-label { fill: #000; }
+
+.figure-label { fill: #000; }

@@ -31,9 +31,12 @@ from PySide6.QtWidgets import (
 )
 from compiler_api import (
     render_to_tempfile, 
-    cleanup_instance_directory, 
+    cleanup_instance_directory,
+    cleanup_force,
     export_standalone_html,
-    build_standalone_html
+    build_standalone_html,
+    BASE_DIR,
+    THEMES_SRC
 )
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
@@ -64,8 +67,8 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.1.3"
-CURRENT_ANNASCRIPT_VERSION = "v1.1.3"
+CURRENT_VERSION = "v1.2.0"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.0"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
@@ -264,7 +267,7 @@ class RibbonGroup(QWidget):
 
 
 class RibbonMenu(QWidget):
-    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, export_ops, help_ops):
+    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, export_ops, debug_ops, help_ops):
         super().__init__()
 
         self.file_ops = file_ops
@@ -272,6 +275,7 @@ class RibbonMenu(QWidget):
         self.clipboard_ops = clipboard_ops
         self.font_ops = font_ops
         self.export_ops = export_ops
+        self.debug_ops = debug_ops
         self.help_ops = help_ops
 
         layout = QVBoxLayout(self)
@@ -279,7 +283,7 @@ class RibbonMenu(QWidget):
         layout.setSpacing(0)
 
         self.tab_bar = QTabBar()
-        for tab_name in ["Home", "Export", "Help"]:
+        for tab_name in ["Home", "Export", "Advanced", "Help"]:
             self.tab_bar.addTab(tab_name)
         self.tab_bar.setExpanding(False)
         layout.addWidget(self.tab_bar)
@@ -289,10 +293,12 @@ class RibbonMenu(QWidget):
 
         self.home_tab = self.make_home_tab()
         self.export_tab = self.make_export_tab()
+        self.advanced_tab = self.make_advanced_tab()
         self.help_tab = self.make_help_tab()
 
         self.stack.addWidget(self.home_tab)
         self.stack.addWidget(self.export_tab)
+        self.stack.addWidget(self.advanced_tab)
         self.stack.addWidget(self.help_tab)
 
         self.tab_bar.currentChanged.connect(self.stack.setCurrentIndex)
@@ -401,6 +407,28 @@ class RibbonMenu(QWidget):
         export_group.buttons["Copy HTML"].clicked.connect(self.export_ops["copy_html"])
 
         layout.addWidget(export_group)
+        layout.addStretch()
+        return tab
+    
+    def make_advanced_tab(self):
+        tab = QWidget()
+        tab.setObjectName("RibbonContent")
+
+        layout = QHBoxLayout(tab)
+        layout.setContentsMargins(8, 8, 8, 4)
+        layout.setSpacing(8)
+
+        advanced_group = RibbonGroup("Advanced", [
+            ["Cleanup temporary directories", "Open application directory"],
+            ["Open temporary directory", "Open themes directory"]
+        ])
+
+        advanced_group.buttons["Cleanup temporary directories"].clicked.connect(self.debug_ops["cleanup_tempdir"])
+        advanced_group.buttons["Open temporary directory"].clicked.connect(self.debug_ops["open_tempdir"])
+        advanced_group.buttons["Open application directory"].clicked.connect(self.debug_ops["open_basedir"])
+        advanced_group.buttons["Open themes directory"].clicked.connect(self.debug_ops["open_themesdir"])
+
+        layout.addWidget(advanced_group)
         layout.addStretch()
         return tab
 
@@ -978,13 +1006,19 @@ class MainWindow(QMainWindow):
             "print": self.print_document,
             "copy_html": self.copy_html,
         }
+        debug_ops = {
+            "cleanup_tempdir": self.cleanup_tempdir,
+            "open_tempdir": self.open_tempdir,
+            "open_themesdir": self.open_themesdir,
+            "open_basedir": self.open_basedir,
+        }
         help_ops = {
             "show_about": self.show_about,
             "show_license": self.show_license,
             "show_symbol_ref": self.show_symbol_ref,
         }
 
-        self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, export_ops, help_ops)
+        self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, export_ops, debug_ops, help_ops)
         self.setMenuWidget(self.ribbon)
 
         container = QWidget()
@@ -1591,6 +1625,28 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
         layout.addWidget(github_label_an)
         dlg.exec()
 
+    def cleanup_tempdir(self):
+        cleanup_force()
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Success")
+        msg.setText("Successfully deleted all temporary files.")
+        msg.setStandardButtons(
+            QMessageBox.Ok
+        )
+        msg.setDefaultButton(QMessageBox.Ok)
+        msg.exec()
+
+        
+    def open_tempdir(self):
+        os.startfile(f"{tempfile.gettempdir()}/ascriptstudio")
+
+    def open_themesdir(self):
+        os.startfile(THEMES_SRC)
+
+    def open_basedir(self):
+        os.startfile(BASE_DIR)
 
     def closeEvent(self, event):
         if self.maybe_save():

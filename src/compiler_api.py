@@ -16,8 +16,7 @@ THEMES_SRC = os.path.join(BASE_DIR, "themes")
 
 ROOT_TEMP = os.path.join(tempfile.gettempdir(), "ascriptstudio", INSTANCE_ID)
 
-THEMES_DST = os.path.join(ROOT_TEMP, "themes")
-
+THEMES_DST = os.path.join(ROOT_TEMP, "themes")                                                 
 
 def _ensure_temp_environment():
     os.makedirs(ROOT_TEMP, exist_ok=True)
@@ -59,6 +58,8 @@ def render_to_tempfile(ascript_text: str) -> str:
         f.write(html_out)
 
     elapsed = round((time.time() - start_time) * 1000, 2)
+    if elapsed >= 200:
+        print(f"[ascript] Warning: Compilation time > 200ms!") # easier lag detection
     print(f"[ascript] wrote {output_path} in {elapsed}ms")
 
     return output_path
@@ -81,6 +82,24 @@ def cleanup_instance_directory():
     except Exception as e:
         print("[ascript] Warning: Cleanup failed:", e)
 
+
+
+def cleanup_force():
+    TOP_LEVEL = os.path.dirname(ROOT_TEMP)
+    try:
+        if os.path.exists(TOP_LEVEL):
+            for item in os.listdir(TOP_LEVEL):
+                item_path = os.path.join(TOP_LEVEL, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+            print(f"[ascript] Cleaned all contents inside {TOP_LEVEL}")
+        else:
+            print(f"[ascript] Top-level folder {TOP_LEVEL} does not exist")
+
+    except Exception as e:
+        print("[ascript] Warning: Cleanup failed:", e)
 
 
 def export_standalone_html(ascript_text: str, output_path: str):
