@@ -283,7 +283,7 @@ class RibbonMenu(QWidget):
         layout.setSpacing(0)
 
         self.tab_bar = QTabBar()
-        for tab_name in ["Home", "Export", "Advanced", "Help"]:
+        for tab_name in ["Home", "Insert", "Export", "Advanced", "Help"]:
             self.tab_bar.addTab(tab_name)
         self.tab_bar.setExpanding(False)
         layout.addWidget(self.tab_bar)
@@ -292,11 +292,13 @@ class RibbonMenu(QWidget):
         layout.addWidget(self.stack)
 
         self.home_tab = self.make_home_tab()
+        self.insert_tab = self.make_insert_tab()
         self.export_tab = self.make_export_tab()
         self.advanced_tab = self.make_advanced_tab()
         self.help_tab = self.make_help_tab()
 
         self.stack.addWidget(self.home_tab)
+        self.stack.addWidget(self.insert_tab)
         self.stack.addWidget(self.export_tab)
         self.stack.addWidget(self.advanced_tab)
         self.stack.addWidget(self.help_tab)
@@ -384,6 +386,18 @@ class RibbonMenu(QWidget):
         layout.addWidget(edit_group)
         layout.addWidget(clipboard_group)
         layout.addWidget(font_group)
+        layout.addStretch()
+        return tab
+
+
+    def make_insert_tab(self):
+        tab = QWidget()
+        tab.setObjectName("RibbonContent")
+
+        layout = QHBoxLayout(tab)
+        layout.setContentsMargins(8, 8, 8, 4)
+        layout.setSpacing(8)
+
         layout.addStretch()
         return tab
 
@@ -792,6 +806,8 @@ class SymbolReferenceDialog(QDialog):
 
     # this is going to be a real pain to update.
     # going to replace this in the next update.
+
+    # update 19/04/2026 - I, in fact, did not replace it.
     def math_symbols(self):
         return [
             ("<->", "↔", "Logical equivalence / bidirectional arrow"),
@@ -989,16 +1005,16 @@ class MainWindow(QMainWindow):
             "select_all": self.select_all
         }
         font_ops = {
-            "underline": self.make_underline,
-            "bold": self.make_bold,
-            "italic": self.make_italic,
-            "bold_italic": self.make_bold_italic,
-            "highlight": self.make_highlight,
-            "sub": self.make_sub,
-            "super": self.make_super,
-            "code": self.make_code,
-            "center": self.make_center,
-            "comment": self.make_comment,
+            "underline": lambda: self.apply_formatting("underline"),
+            "bold": lambda: self.apply_formatting("bold"),
+            "italic": lambda: self.apply_formatting("italic"),
+            "bold_italic": lambda: self.apply_formatting("bold_italic"),
+            "highlight": lambda: self.apply_formatting("highlight"),
+            "sub": lambda: self.apply_formatting("sub"),
+            "super": lambda: self.apply_formatting("super"),
+            "code": lambda: self.apply_formatting("code"),
+            "center": lambda: self.apply_formatting("center"),
+            "comment": lambda: self.apply_formatting("underline"),
         }
         export_ops = {
             "export": self.export_file,
@@ -1065,15 +1081,15 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_file)
             QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.save_file_as)
 
-            QShortcut(QKeySequence("Ctrl+U"), self, activated=self.make_underline)
-            QShortcut(QKeySequence("Ctrl+B"), self, activated=self.make_bold)
-            QShortcut(QKeySequence("Ctrl+I"), self, activated=self.make_italic)
-            QShortcut(QKeySequence("Ctrl+Shift+B"), self, activated=self.make_bold_italic)
-            QShortcut(QKeySequence("Ctrl+H"), self, activated=self.make_highlight)
-            QShortcut(QKeySequence("Ctrl+/"), self, activated=self.make_comment)
-            QShortcut(QKeySequence("Ctrl+Shift+C"), self, activated=self.make_code)
-            QShortcut(QKeySequence("Ctrl+,"), self, activated=self.make_sub)
-            QShortcut(QKeySequence("Ctrl+."), self, activated=self.make_super)
+            QShortcut(QKeySequence("Ctrl+U"), self, activated=lambda: self.apply_formatting("underline"))
+            QShortcut(QKeySequence("Ctrl+B"), self, activated=lambda: self.apply_formatting("bold"))
+            QShortcut(QKeySequence("Ctrl+I"), self, activated=lambda: self.apply_formatting("italic"))
+            QShortcut(QKeySequence("Ctrl+Shift+B"), self, activated=lambda: self.apply_formatting("bold_italic"))
+            QShortcut(QKeySequence("Ctrl+H"), self, activated=lambda: self.apply_formatting("highlight"))
+            QShortcut(QKeySequence("Ctrl+/"), self, activated=lambda: self.apply_formatting("comment"))
+            QShortcut(QKeySequence("Ctrl+Shift+C"), self, activated=lambda: self.apply_formatting("code"))
+            QShortcut(QKeySequence("Ctrl+,"), self, activated=lambda: self.apply_formatting("sub"))
+            QShortcut(QKeySequence("Ctrl+."), self, activated=lambda: self.apply_formatting("super"))
 
             QShortcut(QKeySequence("Ctrl+F"), self, activated=self.open_find_dialog)
             QShortcut(QKeySequence("Ctrl+Shift+F"), self, activated=self.open_find_replace_dialog)
@@ -1324,35 +1340,21 @@ class MainWindow(QMainWindow):
         dlg = FindReplaceDialog(self.editor, replace_mode=True, parent=self)
         dlg.show()
 
-    def make_underline(self):
-        self.wrap_selection("_", "_")
-
-    def make_bold(self):
-        self.wrap_selection("**", "**")
-
-    def make_italic(self):
-        self.wrap_selection("*", "*")
-
-    def make_bold_italic(self):
-        self.wrap_selection("***", "***")
-
-    def make_highlight(self):
-        self.wrap_selection("==", "==")
-
-    def make_comment(self):
-        self.wrap_selection("// ", "")
-
-    def make_code(self):
-        self.wrap_selection("`", "`")
-
-    def make_sub(self):
-        self.wrap_selection(",,", ",,")
-
-    def make_super(self):
-        self.wrap_selection("^^", "^^")
-
-    def make_center(self):
-        self.wrap_selection("::center\n", "\n::")
+    def apply_formatting(self, format_type):
+        wraps = {
+            "underline": ("_", "_"),
+            "bold": ("**", "**"),
+            "italic": ("*", "*"),
+            "bold_italic": ("***", "***"),
+            "highlight": ("==", "=="),
+            "comment": ("// ", ""),
+            "code": ("`", "`"),
+            "sub": (",,", ",,"),
+            "super": ("^^", "^^"),
+            "center": ("::center\n", "\n::"),
+        }
+        prefix, suffix = wraps.get(format_type, ("", ""))
+        self.wrap_selection(prefix, suffix)
 
     def wrap_selection(self, prefix: str, suffix: str):
         cursor = self.editor.textCursor()

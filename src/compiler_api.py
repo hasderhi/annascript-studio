@@ -23,6 +23,7 @@ def _ensure_temp_environment():
 
     if not os.path.exists(THEMES_DST):
         print("[ascript] Copying theme folder...")
+        print(f"[ascript] Instance ID: {INSTANCE_ID}")
         shutil.copytree(THEMES_SRC, THEMES_DST)
         print(f"[ascript] Copied theme folder to {THEMES_DST}")
     else:
