@@ -67,8 +67,8 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.2.0"
-CURRENT_ANNASCRIPT_VERSION = "v1.2.0"
+CURRENT_VERSION = "v1.2.1"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
@@ -267,13 +267,14 @@ class RibbonGroup(QWidget):
 
 
 class RibbonMenu(QWidget):
-    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, export_ops, debug_ops, help_ops):
+    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops):
         super().__init__()
 
         self.file_ops = file_ops
         self.edit_ops = edit_ops
         self.clipboard_ops = clipboard_ops
         self.font_ops = font_ops
+        self.insert_ops = insert_ops
         self.export_ops = export_ops
         self.debug_ops = debug_ops
         self.help_ops = help_ops
@@ -398,6 +399,23 @@ class RibbonMenu(QWidget):
         layout.setContentsMargins(8, 8, 8, 4)
         layout.setSpacing(8)
 
+        insert_group = RibbonGroup("Insert", [
+            ["Box", "Box Warning", "Note", "Table", "Pie Chart"],
+            ["Box Danger", "Box Info", "Definition", "Coordinates", "Bar Chart"],
+        ])
+
+        insert_group.buttons["Box"].clicked.connect(self.insert_ops["box"])
+        insert_group.buttons["Box Danger"].clicked.connect(self.insert_ops["box_danger"])
+        insert_group.buttons["Box Warning"].clicked.connect(self.insert_ops["box_warning"])
+        insert_group.buttons["Box Info"].clicked.connect(self.insert_ops["box_info"])
+        insert_group.buttons["Note"].clicked.connect(self.insert_ops["note"])
+        insert_group.buttons["Definition"].clicked.connect(self.insert_ops["def"])
+        insert_group.buttons["Table"].clicked.connect(self.insert_ops["table"])
+        insert_group.buttons["Coordinates"].clicked.connect(self.insert_ops["coordinates"])
+        insert_group.buttons["Pie Chart"].clicked.connect(self.insert_ops["pie_chart"])
+        insert_group.buttons["Bar Chart"].clicked.connect(self.insert_ops["bar_chart"])
+
+        layout.addWidget(insert_group)
         layout.addStretch()
         return tab
 
@@ -492,34 +510,34 @@ class AScriptHighlighter(QSyntaxHighlighter):
         super().__init__(document)
 
         self.colors = {
-            "param_key":     QColor("#7CC4FF"),
-            "param_value":   QColor("#A9DBFF"),
+            "param_key":     QColor("#7AA2F7"),
+            "param_value":   QColor("#93C5FD"),
 
-            "comment":       QColor("#8A8A8A"),
+            "comment":       QColor("#6A9955"),
 
-            "heading":       QColor("#52D7FF"),
+            "heading":       QColor("#569CD6"),
 
-            "italic":        QColor("#DDBF84"),
-            "bold":          QColor("#F7C96E"),
-            "bolditalic":    QColor("#FFE39C"),
+            "italic":        QColor("#DCDCAA"),
+            "bold":          QColor("#D7BA7D"),
+            "bolditalic":    QColor("#CE9178"),
 
-            "code":          QColor("#C792EA"),
+            "code":          QColor("#C586C0"),
 
-            "supersub":      QColor("#E0A869"),
+            "supersub":      QColor("#D19A66"),
 
-            "link_text":     QColor("#FF9C6B"),
-            "link_url":      QColor("#FF4A3D"),
+            "link_text":     QColor("#CE9178"),
+            "link_url":      QColor("#9CDCFE"),
 
-            "highlight":     QColor("#DFFF8A"),
+            "highlight":     QColor("#D1F1A3"),
 
-            "list_lvl1":     QColor("#9A8BDB"),
-            "list_lvl2":     QColor("#CF76C3"),
+            "list_lvl1":     QColor("#B48EAD"),
+            "list_lvl2":     QColor("#D16474"),
 
-            "macro_marker":  QColor("#CE8CFF"),
-            "macro_inside":  QColor("#9546FD"),
+            "macro_marker":  QColor("#FF79C6"),
+            "macro_inside":  QColor("#BD93F9"),
 
-            "table_header":  QColor("#A8FAC0"),
-            "table_value":   QColor("#B4AB28"),
+            "table_header":  QColor("#85E89D"),
+            "table_value":   QColor("#B5CEA8"),
         }
 
 
@@ -1016,6 +1034,18 @@ class MainWindow(QMainWindow):
             "center": lambda: self.apply_formatting("center"),
             "comment": lambda: self.apply_formatting("underline"),
         }
+        insert_ops = {
+            "box": lambda: self.apply_formatting("box"),
+            "box_danger": lambda: self.apply_formatting("box_danger"),
+            "box_warning": lambda: self.apply_formatting("box_warning"),
+            "box_info": lambda: self.apply_formatting("box_info"),
+            "note": lambda: self.apply_formatting("note"),
+            "def": lambda: self.apply_formatting("def"),
+            "table": lambda: self.apply_formatting("table"),
+            "coordinates": lambda: self.apply_formatting("coordinates"),
+            "pie_chart": lambda: self.apply_formatting("pie_chart"),
+            "bar_chart": lambda: self.apply_formatting("bar_chart"),
+        }
         export_ops = {
             "export": self.export_file,
             "export_pdf": self.export_file_to_pdf,
@@ -1034,7 +1064,7 @@ class MainWindow(QMainWindow):
             "show_symbol_ref": self.show_symbol_ref,
         }
 
-        self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, export_ops, debug_ops, help_ops)
+        self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops)
         self.setMenuWidget(self.ribbon)
 
         container = QWidget()
@@ -1352,6 +1382,17 @@ class MainWindow(QMainWindow):
             "sub": (",,", ",,"),
             "super": ("^^", "^^"),
             "center": ("::center\n", "\n::"),
+            
+            "box": ("::box\n", "\n::"),
+            "box_danger": ("::box type=danger\n", "\n::"),
+            "box_warning": ("::box type=warning\n", "\n::"),
+            "box_info": ("::box type=info\n", "\n::"),
+            "note": ("::note\n", "\n::"),
+            "def": ("::def\n", "\n::"),
+            "table": ("| ", " |"),
+            "coordinates": ("::coordinates scale=20\n", "\n::"),
+            "pie_chart": ("::chart type=pie\n", "\n::"),
+            "bar_chart": ("::chart type=bar\n", "\n::"),
         }
         prefix, suffix = wraps.get(format_type, ("", ""))
         self.wrap_selection(prefix, suffix)

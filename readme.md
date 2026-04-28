@@ -1,7 +1,7 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.2.1-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
 
