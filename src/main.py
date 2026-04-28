@@ -650,6 +650,9 @@ class AScriptEditor(QPlainTextEdit):
         if key == Qt.Key_Backtab:
             self.unindent_selection()
             return
+        
+        if key == Qt.Key_Down:
+            self.move_to_end()
 
         super().keyPressEvent(event)
 
@@ -720,6 +723,18 @@ class AScriptEditor(QPlainTextEdit):
         self.blockSignals(False)
         self.textChanged.emit()
 
+    def move_to_end(self):
+        # something I don't get why it isn't implemented in QPlainTextEdit 
+        # in the first place. Almost every other text edit widget has it.
+        cursor = self.textCursor()
+        block = cursor.block()
+        next_block = block.next()
+
+        if next_block.isValid():
+            return
+
+        cursor.movePosition(cursor.MoveOperation.EndOfBlock)
+        self.setTextCursor(cursor)
 
 
 class FilterableTable(QTableWidget):
