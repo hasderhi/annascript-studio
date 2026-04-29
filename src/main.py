@@ -38,9 +38,17 @@ from compiler_api import (
     BASE_DIR,
     THEMES_SRC
 )
+from logger import (
+    debug,
+    success,
+    info,
+    warning,
+    error
+)
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
-print(f"[ascript] Default path set to {DEFAULT_PATH}")
+
+info(f"Default path set to {DEFAULT_PATH}")
 
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
@@ -60,10 +68,10 @@ def get_latest_version(repo_owner, repo_name):
             response.raise_for_status()
             return response.json()["tag_name"]
         else:
-            print("[ascript] Checking for updates is disabled, skipping...")
+            debug("Checking for updates is disabled, skipping...")
             return None
     except:
-        print("[ascript] Could not determine latest release, skipping...")
+        warning("Could not determine latest release, skipping...")
         return None
 
 update_available = False
@@ -75,10 +83,10 @@ LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
 
 if LATEST_VERSION != None:
     if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
-        print(f"[ascript] Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
+        info(f"Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
         update_available = True
     else:
-        print(f"[ascript] {CURRENT_VERSION} is the newest version")
+        success(f"{CURRENT_VERSION} is the newest version")
         update_available = False
 
 
@@ -1101,7 +1109,7 @@ class MainWindow(QMainWindow):
 
         
     def show_update_dialog(self, LATEST_VERSION):
-        print("[ascript] Notifying user...")
+        info("Notifying user...")
         msg_box = QMessageBox(self)
         pixmap = QPixmap(resource_path("annascriptstudio.png")).scaled(64, 64) 
         msg_box.setIconPixmap(pixmap)
@@ -1118,7 +1126,7 @@ class MainWindow(QMainWindow):
 
         if msg_box.clickedButton() == download_button:
             webbrowser.open(f"https://github.com/hasderhi/annascript-studio/releases/latest")
-            print("[ascript] User chose to download update, opening browser and continuing with startup...")
+            info("User chose to download update, opening browser and continuing with startup...")
 
     def setup_shortcuts(self):
             QShortcut(QKeySequence("Ctrl+N"), self, activated=self.new_file)
@@ -1307,11 +1315,11 @@ class MainWindow(QMainWindow):
 
         def handle_load_finished(ok):
             if not ok:
-                print("[ascript] Failed to load HTML for PDF export.")
+                error("Failed to load HTML for PDF export.")
                 return
 
             def finished(_):
-                print(f"[ascript] PDF exported successfully -> {pdf_path}")
+                success(f"PDF exported successfully -> {pdf_path}")
                 try:
                     os.remove(html_path)  # cleanup temp file
                 except OSError:
@@ -1327,7 +1335,7 @@ class MainWindow(QMainWindow):
 
     def print_document(self):
         try:
-            print("[ascript] Initiating printing dialog...")
+            info("Initiating printing dialog...")
             html = build_standalone_html(self.editor.toPlainText())
             printer = QPrinter(QPrinter.HighResolution)
             dialog = QPrintDialog(printer, self)
@@ -1340,16 +1348,16 @@ class MainWindow(QMainWindow):
 
             def handle_load_finished(ok):
                 if not ok:
-                    print("[ascript] Failed to render document for printing.")
+                    error("Failed to render document for printing.")
                     return
 
                 self.print_view.print(printer)
-                print("[ascript] Document sent to printer.")
+                success("Document sent to printer.")
 
             self.print_view.loadFinished.connect(handle_load_finished)
             self.print_view.setHtml(html)
         except Exception as e:
-            print(f"[ascript] Failed to print document: {e}")
+            error(f"Failed to print document: {e}")
 
 
     def copy_html(self):
@@ -1502,6 +1510,7 @@ class MainWindow(QMainWindow):
             </html>
             """
             self.preview.setHtml(error_html)
+            error(f"Failed to compile: {e}")
 
 
     def show_license(self):
