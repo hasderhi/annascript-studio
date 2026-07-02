@@ -1,5 +1,10 @@
 DO_NOT_CHECK_FOR_UPDATES = False
 
+
+CURRENT_VERSION = "v1.2.2"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.2"
+
+
 import sys
 import html
 import traceback
@@ -43,8 +48,13 @@ from logger import (
     success,
     info,
     warning,
-    error
+    error,
+    title,
+    website
 )
+
+title(CURRENT_VERSION)
+website()
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
 
@@ -75,8 +85,6 @@ def get_latest_version(repo_owner, repo_name):
         return None
 
 update_available = False
-CURRENT_VERSION = "v1.2.1"
-CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 
 LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
@@ -408,8 +416,8 @@ class RibbonMenu(QWidget):
         layout.setSpacing(8)
 
         insert_group = RibbonGroup("Insert", [
-            ["Box", "Box Warning", "Note", "Table", "Pie Chart"],
-            ["Box Danger", "Box Info", "Definition", "Coordinates", "Bar Chart"],
+            ["Box", "Box Warning", "Note", "Table", "Pie Chart", "Root"],
+            ["Box Danger", "Box Info", "Definition", "Coordinates", "Bar Chart", "Fraction"],
         ])
 
         insert_group.buttons["Box"].clicked.connect(self.insert_ops["box"])
@@ -422,6 +430,8 @@ class RibbonMenu(QWidget):
         insert_group.buttons["Coordinates"].clicked.connect(self.insert_ops["coordinates"])
         insert_group.buttons["Pie Chart"].clicked.connect(self.insert_ops["pie_chart"])
         insert_group.buttons["Bar Chart"].clicked.connect(self.insert_ops["bar_chart"])
+        insert_group.buttons["Root"].clicked.connect(self.insert_ops["sqrt"])
+        insert_group.buttons["Fraction"].clicked.connect(self.insert_ops["frac"])
 
         layout.addWidget(insert_group)
         layout.addStretch()
@@ -1068,6 +1078,8 @@ class MainWindow(QMainWindow):
             "coordinates": lambda: self.apply_formatting("coordinates"),
             "pie_chart": lambda: self.apply_formatting("pie_chart"),
             "bar_chart": lambda: self.apply_formatting("bar_chart"),
+            "sqrt": lambda: self.apply_formatting("sqrt"),
+            "frac": lambda: self.apply_formatting("frac"),
         }
         export_ops = {
             "export": self.export_file,
@@ -1416,6 +1428,9 @@ class MainWindow(QMainWindow):
             "coordinates": ("::coordinates scale=20\n", "\n::"),
             "pie_chart": ("::chart type=pie\n", "\n::"),
             "bar_chart": ("::chart type=bar\n", "\n::"),
+
+            "frac": ("\\frac{", "}{}"),
+            "sqrt": ("\\sqrt{", "}"),
         }
         prefix, suffix = wraps.get(format_type, ("", ""))
         self.wrap_selection(prefix, suffix)
@@ -1470,9 +1485,10 @@ class MainWindow(QMainWindow):
 
     def update_preview(self):
         source = self.editor.toPlainText()
+        cursor = self.editor.textCursor()
 
         try:
-            out_path = render_to_tempfile(source)
+            out_path = render_to_tempfile(source, cursor)
             self.last_preview_path = out_path
             self.preview.setUrl(QUrl.fromLocalFile(out_path))
 
@@ -1786,4 +1802,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
 
     win = MainWindow()
     win.show()
+    success("Created main window")
     app.exec()
+
+success("Process exited")
