@@ -1,3 +1,5 @@
 PySide6 
 PySide6-Addons 
 PySide6-Essentials
+requests
+packaging

@@ -49,18 +49,23 @@ def _cleanup_old_previews():
                 warning(f"Could not delete old preview: {e}")
 
 
-def render_to_tempfile(ascript_text: str) -> str:
+def render_to_tempfile(ascript_text: str, cursor=None) -> str:
     _ensure_temp_environment()
 
     _cleanup_old_previews()
 
+    cursor_line = None
+
+    if cursor is not None:
+        cursor_line = cursor.blockNumber() + 1
+        
     file_id = uuid.uuid4().hex
     output_path = os.path.join(ROOT_TEMP, f"preview_{file_id}.html")
 
     start_time = time.time()
 
     ast = parse_text(ascript_text)
-    html_out = render(ast)
+    html_out = render(ast, cursor_line=cursor_line)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_out)

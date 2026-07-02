@@ -18,6 +18,12 @@ def get_timestamp():
     timestamp = time.ctime().split()
     return f"[{timestamp[3]}]"
 
+def title(version):
+    print(TITLE, PURPLE, f"annaScript Studio {version} - Copyright (c) 2025-2026 Annabeth Kisling", END)
+
+def website():
+    print(TITLE, PURPLE, "Support: https://tk-dev-software.com/annascript", END)
+
 def debug(msg):
     print(TITLE, get_timestamp(), DEBUG, PURPLE, msg, END)
 
