@@ -56,6 +56,9 @@ from logger import (
 title(CURRENT_VERSION)
 website()
 
+if sys.platform == "linux":
+    warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
+
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
 
 info(f"Default path set to {DEFAULT_PATH}")
@@ -66,6 +69,14 @@ def resource_path(relative_path: str) -> str:
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
+def open_file_or_dir(path):
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", path])
+    else:
+        subprocess.run(["xdg-open", path])
 
 def get_latest_version(repo_owner, repo_name):
     headers = {
@@ -98,6 +109,8 @@ if LATEST_VERSION != None:
         update_available = False
 
 
+if os.path.isfile(resource_path("annascript.png")) == False and os.path.isfile(resource_path("annascriptstudio.png")) == False:
+    warning("Could not load icons, check if you are in src directory")
 
 
 
@@ -876,6 +889,10 @@ class SymbolReferenceDialog(QDialog):
 
             (r"\frac{x}{y}", "x / y", "Fraction"),
             (r"\bar{x}", "x", "Bar over x"),
+            (r"\sqrt{x}", "√x", "Square Root"),
+            (r"\binom{x}{y}", "x  y", "x over y"),
+            (r"\lim_{x \to y}", "lim x → y", "Limit"),
+            (r"\vec{a}", "a→", "Vector"),
 
             (r"\infty", "∞", "Infinity"),
             (r"\propto", "∝", "Proportional to"),
@@ -1013,6 +1030,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("annaScript Studio")
         self.resize(1400, 900)
+        self.setMinimumSize(1000, 300)
 
         self.current_file = None
         self.last_preview_path = None
@@ -1236,14 +1254,24 @@ class MainWindow(QMainWindow):
         self.document_modified = False
         self.update_window_title()
 
+
     def save_file_as(self):
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save annaScript", DEFAULT_PATH, "annaScript (*.ascr *.ascript)"
+        file_filter = "annaScript (*.ascr *.ascript)"
+        
+        path, selected_filter = QFileDialog.getSaveFileName(
+            self, "Save annaScript", DEFAULT_PATH, file_filter
         )
         if not path:
             return
+            
+        _, ext = os.path.splitext(path)
+        if not ext:
+            default_ext = file_filter.split('(')[1].split()[0].replace('*', '')
+            path += default_ext
+
         self.current_file = path
         self.save_file()
+
 
 
     def open_file(self):
@@ -1579,7 +1607,7 @@ The following part of the license applies to both<br>
 
 <b>MIT License</b><br><br>
 
-Copyright (c) 2025-2026 <i>Tobias Kisling (Annabeth / tk_dev / hasderhi)</i><br><br>
+Copyright (c) 2025-2026 <i>Annabeth Kisling (tk_dev / hasderhi)</i><br><br>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy<br>
 of this software and associated documentation files (the "Software"), to deal<br>
@@ -1723,13 +1751,13 @@ is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your applic
 
         
     def open_tempdir(self):
-        os.startfile(f"{tempfile.gettempdir()}/ascriptstudio")
+        open_file_or_dir(f"{tempfile.gettempdir()}/ascriptstudio")
 
     def open_themesdir(self):
-        os.startfile(THEMES_SRC)
+        open_file_or_dir(THEMES_SRC)
 
     def open_basedir(self):
-        os.startfile(BASE_DIR)
+        open_file_or_dir(BASE_DIR)
 
     def closeEvent(self, event):
         if self.maybe_save():
