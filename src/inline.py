@@ -4,12 +4,50 @@ import html
 
 
 def apply_math_extensions(text):
+    # Binomial
+    binom_pattern = r"\\binom\{([^}]+)\}\{([^}]+)\}"
+    text = re.sub(
+        binom_pattern,
+        r'<span class="binom"><span class="paren">(</span><span class="stack"><span>\1</span><span>\2</span></span><span class="paren">)</span></span>',
+        text
+    )
+
+    # Fraction
     frac_pattern = r"\\frac\{([^}]+)\}\{([^}]+)\}"
-    text = re.sub(frac_pattern, r'<span class="frac"><span>\1</span><span class="bottom">\2</span></span>', text)
-    
-    text = re.sub(r"\\sqrt\{([^}]+)\}", r'√<span class="overline">\1</span>', text)
-    text = re.sub(r"\\bar\{([^}]+)\}", r'<span class="overline">\1</span>', text)
-        
+    text = re.sub(
+        frac_pattern,
+        r'<span class="frac"><span>\1</span><span class="bottom">\2</span></span>',
+        text
+    )
+
+    # Square root
+    text = re.sub(
+        r"\\sqrt\{([^}]+)\}",
+        r'√<span class="overline">\1</span>',
+        text
+    )
+
+    # bar
+    text = re.sub(
+        r"\\bar\{([^}]+)\}",
+        r'<span class="overline">\1</span>',
+        text
+    )
+
+    # vector
+    text = re.sub(
+        r"\\vec\{([^}]+)\}",
+        r'<span class="vec">\1<span class="arrow">→</span></span>',
+        text
+    )
+
+    # limit
+    text = re.sub(
+        r"\\lim_\{([^}]*)\s*\\to\s*([^}]*)\}",
+        r'<span class="lim"><span class="main">lim</span><span class="sub"><span>\1 → \2</span></span></span>',
+        text
+    )
+
     return text
 
 
