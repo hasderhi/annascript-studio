@@ -592,7 +592,9 @@ class AScriptHighlighter(QSyntaxHighlighter):
 
         self.rules.append((re.compile(r"\*\*[^*]+?\*\*"), self.formats["bold"]))
 
-        self.rules.append((re.compile(r"\*[^*]+?\*"), self.formats["italic"]))
+        # FIXED: Added negative lookbehind (?<!\*) and negative lookahead (?!\*)
+        # This ensures single asterisks don't accidentally pair up with double asterisks
+        self.rules.append((re.compile(r"(?<!\*)\*(?!\*)[^*]+?(?<!\*)\*(?!\*)"), self.formats["italic"]))
 
         self.rules.append((re.compile(r"`[^`]+?`"), self.formats["code"]))
 
@@ -652,7 +654,6 @@ class AScriptHighlighter(QSyntaxHighlighter):
             for match in pattern.finditer(text):
                 start, end = match.span()
                 self.setFormat(start, end - start, fmt)
-
 
 
 class AScriptEditor(QPlainTextEdit):
