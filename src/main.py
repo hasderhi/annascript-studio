@@ -551,6 +551,8 @@ class AScriptHighlighter(QSyntaxHighlighter):
             "italic":        QColor("#DCDCAA"),
             "bold":          QColor("#D7BA7D"),
             "bolditalic":    QColor("#CE9178"),
+            
+            "underline":     QColor("#4EC9B0"),
 
             "code":          QColor("#C586C0"),
 
@@ -566,6 +568,8 @@ class AScriptHighlighter(QSyntaxHighlighter):
 
             "macro_marker":  QColor("#FF79C6"),
             "macro_inside":  QColor("#BD93F9"),
+            
+            "inline_symbol": QColor("#4FC1FF"),
 
             "table_header":  QColor("#85E89D"),
             "table_value":   QColor("#B5CEA8"),
@@ -592,9 +596,9 @@ class AScriptHighlighter(QSyntaxHighlighter):
 
         self.rules.append((re.compile(r"\*\*[^*]+?\*\*"), self.formats["bold"]))
 
-        # FIXED: Added negative lookbehind (?<!\*) and negative lookahead (?!\*)
-        # This ensures single asterisks don't accidentally pair up with double asterisks
         self.rules.append((re.compile(r"(?<!\*)\*(?!\*)[^*]+?(?<!\*)\*(?!\*)"), self.formats["italic"]))
+
+        self.rules.append((re.compile(r"(?<!\w)_(?!_)[^_]+(?<!_)_(?!\w)"), self.formats["underline"]))
 
         self.rules.append((re.compile(r"`[^`]+?`"), self.formats["code"]))
 
@@ -603,6 +607,8 @@ class AScriptHighlighter(QSyntaxHighlighter):
 
         self.rules.append((re.compile(r"\[[^\]]+?\]"), self.formats["link_text"]))
         self.rules.append((re.compile(r"\([^)]+?\)"), self.formats["link_url"]))
+
+        self.rules.append((re.compile(r"(?<!\w)\\[A-Za-z]+(?:\{[^}]*\})*"), self.formats["inline_symbol"]))
 
         self.rules.append((re.compile(r"==[^=]+?=="), self.formats["highlight"]))
 
