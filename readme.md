@@ -1,7 +1,7 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.2.2-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.2.3-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
 
@@ -125,6 +125,17 @@ Ordered:
 ```annascript
 1. First
 2. Second
+```
+
+#### ToDo Lists
+
+ToDo lists in *annaScript* follow the usual syntax in most markup languages (there is no need to reinvent the wheel).
+
+```annascript
+[x] checked
+[] unchecked
+[ x ] checked
+[   ] unchecked
 ```
 
 #### Macros

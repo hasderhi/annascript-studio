@@ -1,7 +1,7 @@
 DO_NOT_CHECK_FOR_UPDATES = False
 
 
-CURRENT_VERSION = "v1.2.2"
+CURRENT_VERSION = "v1.2.3"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 REPO_OWNER = "hasderhi" # change this if you've forked the repo
