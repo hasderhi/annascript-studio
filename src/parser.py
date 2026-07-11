@@ -182,6 +182,16 @@ def parse(tokens):
             i = node.__end_index__
             continue
 
+        if tok.type == "TODO":
+            raw = tok.value.strip()
+            checked = bool(re.match(r'^\[\s*[xX]\s*\]', raw))
+            name = re.sub(r'^\[\s*[xX]?\s*\]\s*', '', raw)
+            node = ToDo(name=name, checked=checked, start_line=tok.lineno, end_line=tok.lineno)
+            node.__end_index__ = i + 1
+            children.append(node)
+            i += 1
+            continue
+
         # unknown, skip
         i += 1
 

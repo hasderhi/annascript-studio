@@ -129,6 +129,20 @@ td {
     border: 1px solid var(--table-border);
 }
 
+.todo-checkbox {
+    pointer-events: none;
+    vertical-align: middle;
+    accent-color: var(--accent);
+}
+
+.todo-item {
+    pointer-events: none;
+    color: inherit;
+}
+
+.todo-item.completed {
+    color: var(--text-soft);
+}
 
 .note {
     background: var(--note-bg);

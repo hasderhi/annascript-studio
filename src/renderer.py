@@ -381,7 +381,19 @@ def render(node: Node, cursor_line=None) -> str:
     if isinstance(node, Macro):
         fn = _macro_registry.get(node.name, render_macro_generic)
         return marker_for(node, cursor_line) + fn(node)
+    
+    if isinstance(node, ToDo):
+        checked_attr = "checked" if node.checked else ""
+        completed_class = " completed" if node.checked else ""
+        escaped_name = html.escape(node.name)
 
+        return marker_for(node, cursor_line) + (
+            f'<label class="todo-item{completed_class}">'
+            f'<input type="checkbox" class="todo-checkbox" {checked_attr}> '
+            f'{escaped_name}'
+            f'</label><br>' # break so multiple boxes create a list
+        )
+    
     if isinstance(node, Comment):
         return ""
 

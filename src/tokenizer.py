@@ -62,6 +62,10 @@ def tokenize(text: str):
             tokens.append(Token("TABLE_ROW", line.strip(), lineno=idx, indent=indent))
             continue
 
+        if re.match(r'^\s*\[\s*[xX]?\s*\]\s+\S', line):
+            tokens.append(Token("TODO", line.rstrip(), lineno=idx, indent=indent))
+            continue
+
         tokens.append(Token("TEXT", line.rstrip(), lineno=idx, indent=indent))
 
     tokens.append(Token("EOF", None, lineno=len(lines) + 1, indent=0))

@@ -31,6 +31,11 @@ class Macro(Node):
     content: str = ""
 
 @dataclass
+class ToDo(Node):
+    name: str = ""
+    checked: bool = False
+
+@dataclass
 class ListItem(Node):
     text: str = ""
     children: List[Node] = field(default_factory=list)
