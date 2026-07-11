@@ -4,6 +4,8 @@ DO_NOT_CHECK_FOR_UPDATES = False
 CURRENT_VERSION = "v1.2.2"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
+REPO_OWNER = "hasderhi" # change this if you've forked the repo
+
 
 import sys
 import html
@@ -56,6 +58,7 @@ from logger import (
 title(CURRENT_VERSION)
 website()
 
+# sigh...
 if sys.platform == "linux":
     warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
 
@@ -98,7 +101,7 @@ def get_latest_version(repo_owner, repo_name):
 update_available = False
 
 
-LATEST_VERSION = get_latest_version("hasderhi", "annascript-studio")
+LATEST_VERSION = get_latest_version(REPO_OWNER, "annascript-studio")
 
 if LATEST_VERSION != None:
     if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
