@@ -1458,7 +1458,7 @@ class MainWindow(QMainWindow):
             if dialog.exec() != QPrintDialog.Accepted:
                 return
 
-            self.print_view = QWebEngineView()  # must persist
+            self.print_view = QWebEngineView() # must persist
 
             def handle_load_finished(ok):
                 if not ok:
