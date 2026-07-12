@@ -1147,7 +1147,6 @@ class MainWindow(QMainWindow):
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
 
-        
     def show_update_dialog(self, LATEST_VERSION):
         info("Notifying user...")
         msg_box = QMessageBox(self)
@@ -1198,6 +1197,21 @@ class MainWindow(QMainWindow):
         self.document_modified = True
         self.update_window_title()
 
+    def get_document_parameter(self, text: str, parameter_name: str) -> str: 
+        # magical function that solves all my problems (or almost)
+        prefix = f"@{parameter_name}:"
+        
+        for line in text.splitlines():
+            line = line.strip()
+            
+            if not line or not line.startswith("@"):
+                break
+                
+            if line.startswith(prefix):
+                _, value = line.split(":", 1)
+                return value.strip()
+                            
+        raise KeyError(f"Parameter '{parameter_name}' not found in the document header.")
 
     def update_window_title(self):
         base = "annaScript Studio"
@@ -1266,10 +1280,16 @@ class MainWindow(QMainWindow):
 
 
     def save_file_as(self):
+        editor_text = self.editor.toPlainText()
+        try:
+            default_filename = os.path.join(DEFAULT_PATH, f"{self.get_document_parameter(editor_text, 'title')}.ascr") 
+        except:
+            default_filename = os.path.join(DEFAULT_PATH, "untitled.ascr") 
+        
         file_filter = "annaScript (*.ascr *.ascript)"
         
         path, selected_filter = QFileDialog.getSaveFileName(
-            self, "Save annaScript", DEFAULT_PATH, file_filter
+            self, "Save annaScript", default_filename, file_filter
         )
         if not path:
             return
@@ -1278,6 +1298,22 @@ class MainWindow(QMainWindow):
         if not ext:
             default_ext = file_filter.split('(')[1].split()[0].replace('*', '')
             path += default_ext
+
+        directory, filename = os.path.split(path)
+        base_name, file_ext = os.path.splitext(filename)
+
+        base_name = base_name.strip(" .")
+
+        reserved_pattern = r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$"
+        if re.match(reserved_pattern, base_name, re.IGNORECASE):
+            base_name = f"_{base_name}"
+            path = os.path.join(directory, base_name + file_ext)
+            
+            QMessageBox.warning(
+                self, 
+                "Reserved Name Adjusted", 
+                f"The name you chose may be reserved by the OS. It has been saved as '{base_name}{file_ext}' to prevent file corruption."
+            )
 
         self.current_file = path
         self.save_file()
@@ -1371,7 +1407,7 @@ class MainWindow(QMainWindow):
             def finished(_):
                 success(f"PDF exported successfully -> {pdf_path}")
                 try:
-                    os.remove(html_path)  # cleanup temp file
+                    os.remove(html_path) # cleanup temp file
                 except OSError:
                     pass
 
@@ -1386,6 +1422,34 @@ class MainWindow(QMainWindow):
     def print_document(self):
         try:
             info("Initiating printing dialog...")
+
+            try:
+                editor_text = self.editor.toPlainText()
+                darkmode_value = self.get_document_parameter(editor_text, "darkmode")
+                if darkmode_value == "1" or darkmode_value == "true" or darkmode_value == "yes":
+                    # if this is the case, the user probably doesn't want to continue - printer ink is expensive!
+
+                    warning("Dark mode has been detected! Asking user before proceeding...")
+                    msg = QMessageBox(self)
+                    msg.setIcon(QMessageBox.Warning)
+                    msg.setWindowTitle("Dark Mode is enabled.")
+                    msg.setText("Dark Mode is enabled.")
+                    msg.setInformativeText("Do you want to print this document?")
+                    msg.setStandardButtons(
+                        QMessageBox.Yes |
+                        QMessageBox.No
+                    )
+                    msg.setDefaultButton(QMessageBox.No)
+                    result = msg.exec()
+                    if result == QMessageBox.No:
+                        warning("Aborting...")
+                        return
+                    if result == QMessageBox.Yes:
+                        warning("Printing anyway...")
+                        pass
+            except KeyError:
+                pass
+
             html = build_standalone_html(self.editor.toPlainText())
             printer = QPrinter(QPrinter.HighResolution)
             dialog = QPrintDialog(printer, self)
