@@ -1,12 +1,13 @@
-DO_NOT_CHECK_FOR_UPDATES = False
+"""
+# annaScript Studio
+
+## main executable
+
+To change certain application functions, please check the constants below the imports!
+"""
 
 
-CURRENT_VERSION = "v1.2.3"
-CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
-
-REPO_OWNER = "hasderhi" # change this if you've forked the repo
-
-
+# Imports
 import sys
 import html
 import traceback
@@ -22,7 +23,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 from PySide6.QtCore import (
-    Qt, QTimer, QUrl, QDir
+    Qt, QTimer, QUrl, QDir, QRegularExpression
 )
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
@@ -34,7 +35,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QTabBar, QStackedWidget, QToolButton, QSizePolicy,
     QLabel, QGridLayout, QSplitter, QFileDialog, QDialog, 
     QLineEdit, QPushButton, QMessageBox, QTabWidget, QTableWidget,
-    QTableWidgetItem, QMenu
+    QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea
 )
 from compiler_api import (
     render_to_tempfile, 
@@ -55,6 +56,17 @@ from logger import (
     website
 )
 
+
+# Constants
+DO_NOT_CHECK_FOR_UPDATES = False
+
+CURRENT_VERSION = "v1.2.3"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
+
+REPO_OWNER = "hasderhi" # change this if you've forked the repo
+
+
+# Startup and helpers
 title(CURRENT_VERSION)
 website()
 
@@ -100,7 +112,6 @@ def get_latest_version(repo_owner, repo_name):
 
 update_available = False
 
-
 LATEST_VERSION = get_latest_version(REPO_OWNER, "annascript-studio")
 
 if LATEST_VERSION != None:
@@ -111,76 +122,114 @@ if LATEST_VERSION != None:
         success(f"{CURRENT_VERSION} is the newest version")
         update_available = False
 
-
 if os.path.isfile(resource_path("annascript.png")) == False and os.path.isfile(resource_path("annascriptstudio.png")) == False:
     warning("Could not load icons, check if you are in src directory")
 
 
-
-
-
-
+# Find/Replace
 class FindReplaceDialog(QDialog):
-    def __init__(self, editor: QPlainTextEdit, replace_mode=False, parent=None):
+    def __init__(self, editor, replace_mode=False, parent=None):
         super().__init__(parent)
 
         self.editor = editor
         self.replace_mode = replace_mode
 
         self.setWindowTitle("Find & Replace" if replace_mode else "Find")
-        self.setWindowModality(Qt.ApplicationModal)
-        self.setMinimumWidth(400)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+        self.setMinimumWidth(420)
+        
+        self.init_stylesheet()
+        self.init_ui()
+
+    def init_stylesheet(self):
         self.setStyleSheet("""
             QDialog {
-                background: #2B2B2B;
-                color: white;
+                background-color: #2B2B2B;
+                color: #E0E0E0;
             }
             QLabel {
                 font-size: 13px;
-                background: #2B2B2B;
-                color: #ffffff;
+                color: #E0E0E0;
             }
             QLineEdit {
-                background: #1E1E1E;
+                background-color: #1E1E1E;
                 color: #FFFFFF;
-                padding: 4px;
+                padding: 5px;
                 border: 1px solid #444444;
+                border-radius: 4px;
+                selection-background-color: #444444;
+            }
+            QLineEdit:focus {
+                border: 1px solid #8f0000;
+            }
+            QCheckBox {
+                color: #E0E0E0;
+                font-size: 12px;
+                spacing: 6px;
             }
             QPushButton {
-                background: #3C3C3C;
+                background-color: #3C3C3C;
                 color: white;
-                padding: 6px 12px;
+                padding: 6px 14px;
                 border: 1px solid #555555;
+                border-radius: 4px;
+                font-size: 12px;
             }
             QPushButton:hover {
-                background: #505050;
+                background-color: #4E4E4E;
+                border-color: #666666;
             }
             QPushButton:pressed {
-                background: #666666;
+                background-color: #b83b3b;
+                border-color: #8f0000;
+            }
+            QFrame#separator {
+                border-top: 1px solid #3E3E3E;
+                margin-top: 5px;
+                margin-bottom: 5px;
             }
         """)
 
-        layout = QVBoxLayout(self)
+    def init_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(12, 12, 12, 12)
 
-        find_row = QHBoxLayout()
-        find_row.addWidget(QLabel("Find:"))
+        grid_layout = QGridLayout()
+        grid_layout.setSpacing(8)
+
+        grid_layout.addWidget(QLabel("Find:"), 0, 0)
         self.find_edit = QLineEdit()
-        find_row.addWidget(self.find_edit)
-        layout.addLayout(find_row)
+        grid_layout.addWidget(self.find_edit, 0, 1)
 
         if self.replace_mode:
-            replace_row = QHBoxLayout()
-            replace_row.addWidget(QLabel("Replace:"))
+            grid_layout.addWidget(QLabel("Replace:"), 1, 0)
             self.replace_edit = QLineEdit()
-            replace_row.addWidget(self.replace_edit)
-            layout.addLayout(replace_row)
+            grid_layout.addWidget(self.replace_edit, 1, 1)
 
-        btn_row = QHBoxLayout()
+        main_layout.addLayout(grid_layout)
+
+        options_layout = QHBoxLayout()
+        self.case_cb = QCheckBox("Match Case")
+        self.whole_cb = QCheckBox("Whole Words")
+        self.regex_cb = QCheckBox("Regex")
+        
+        options_layout.addWidget(self.case_cb)
+        options_layout.addWidget(self.whole_cb)
+        options_layout.addWidget(self.regex_cb)
+        main_layout.addLayout(options_layout)
+
+        sep = QFrame()
+        sep.setObjectName("separator")
+        main_layout.addWidget(sep)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(6)
 
         find_next_btn = QPushButton("Find Next")
         find_prev_btn = QPushButton("Find Prev")
-        btn_row.addWidget(find_next_btn)
-        btn_row.addWidget(find_prev_btn)
+        btn_layout.addWidget(find_next_btn)
+        btn_layout.addWidget(find_prev_btn)
 
         find_next_btn.clicked.connect(self.find_next)
         find_prev_btn.clicked.connect(self.find_prev)
@@ -188,84 +237,130 @@ class FindReplaceDialog(QDialog):
         if self.replace_mode:
             replace_btn = QPushButton("Replace")
             replace_all_btn = QPushButton("Replace All")
-            btn_row.addWidget(replace_btn)
-            btn_row.addWidget(replace_all_btn)
+            btn_layout.addWidget(replace_btn)
+            btn_layout.addWidget(replace_all_btn)
 
             replace_btn.clicked.connect(self.replace_one)
             replace_all_btn.clicked.connect(self.replace_all)
 
-        layout.addLayout(btn_row)
+        main_layout.addLayout(btn_layout)
+
+        self.find_edit.setFocus()
+
+    def get_find_flags(self):
+        flags = QTextDocument.FindFlag(0)
+        if self.case_cb.isChecked():
+            flags |= QTextDocument.FindFlag.FindCaseSensitively
+        if self.whole_cb.isChecked():
+            flags |= QTextDocument.FindFlag.FindWholeWords
+        return flags
 
     def find_next(self):
         text = self.find_edit.text()
         if not text:
-            return
+            return False
 
-        if not self.editor.find(text):
+        flags = self.get_find_flags()
+        
+        if self.regex_cb.isChecked():
+            re_flags = QRegularExpression.PatternOption.NoPatternOption
+            if not self.case_cb.isChecked():
+                re_flags |= QRegularExpression.PatternOption.CaseInsensitiveOption
+            
+            expr = QRegularExpression(text, re_flags)
+            found = self.editor.find(expr, flags)
+        else:
+            found = self.editor.find(text, flags)
+
+        if not found:
             cursor = self.editor.textCursor()
-            cursor.movePosition(QTextCursor.Start)
+            cursor.movePosition(QTextCursor.MoveOperation.Start)
             self.editor.setTextCursor(cursor)
-            self.editor.find(text)
+            
+            if self.regex_cb.isChecked():
+                found = self.editor.find(QRegularExpression(text, re_flags), flags)
+            else:
+                found = self.editor.find(text, flags)
+                
+        return found
 
     def find_prev(self):
         text = self.find_edit.text()
         if not text:
             return
-        
-        if not self.editor.find(text, QTextDocument.FindBackward):
+
+        flags = self.get_find_flags() | QTextDocument.FindFlag.FindBackward
+
+        if self.regex_cb.isChecked():
+            re_flags = QRegularExpression.PatternOption.NoPatternOption
+            if not self.case_cb.isChecked():
+                re_flags |= QRegularExpression.PatternOption.CaseInsensitiveOption
+            
+            expr = QRegularExpression(text, re_flags)
+            found = self.editor.find(expr, flags)
+        else:
+            found = self.editor.find(text, flags)
+
+        if not found:
             cursor = self.editor.textCursor()
-            cursor.movePosition(QTextCursor.End)
+            cursor.movePosition(QTextCursor.MoveOperation.End)
             self.editor.setTextCursor(cursor)
-            self.editor.find(text, QTextDocument.FindBackward)
+            
+            if self.regex_cb.isChecked():
+                self.editor.find(QRegularExpression(text, re_flags), flags)
+            else:
+                self.editor.find(text, flags)
 
     def replace_one(self):
-        find_text = self.find_edit.text()
-        replace_text = self.replace_edit.text()
-
         cursor = self.editor.textCursor()
-        selected = cursor.selectedText()
-
-        if selected == find_text:
-            cursor.insertText(replace_text)
+        if cursor.hasSelection():
+            cursor.insertText(self.replace_edit.text())
+            self.find_next()
         else:
             self.find_next()
-            cursor = self.editor.textCursor()
-            if cursor.selectedText() == find_text:
-                cursor.insertText(replace_text)
 
     def replace_all(self):
         find_text = self.find_edit.text()
-        replace_text = self.replace_edit.text()
+        if not find_text:
+            return
 
-        text = self.editor.toPlainText()
-        new_text = text.replace(find_text, replace_text)
-        self.editor.setPlainText(new_text)
+        cursor = self.editor.textCursor()
+        cursor.beginEditBlock()
+
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        self.editor.setTextCursor(cursor)
+
+        while self.find_next():
+            current_cursor = self.editor.textCursor()
+            current_cursor.insertText(self.replace_edit.text())
+
+        cursor.endEditBlock()
 
 
-
-
+# Ribbon Menu
 class RibbonGroup(QWidget):
-    def __init__(self, title, buttons):
-        super().__init__()
+    def __init__(self, title, buttons, parent=None):
+        super().__init__(parent)
         self.buttons = {}
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 2)
-        layout.setSpacing(2)
+        layout.setContentsMargins(6, 6, 6, 4)
+        layout.setSpacing(4)
 
         grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(3)
-        grid.setVerticalSpacing(3)
+        grid.setContentsMargins(2, 2, 2, 2)
+        grid.setHorizontalSpacing(4)
+        grid.setVerticalSpacing(4)
 
         for row, row_buttons in enumerate(buttons):
             for col, text in enumerate(row_buttons):
                 if text:
                     btn = QToolButton()
                     btn.setText(text)
-                    btn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-                    btn.setMinimumWidth(70)
-                    btn.setMinimumHeight(28)
+                    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+                    btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+                    btn.setMinimumWidth(75)
+                    btn.setMinimumHeight(26)
 
                     grid.addWidget(btn, row, col)
                     self.buttons[text] = btn
@@ -273,34 +368,51 @@ class RibbonGroup(QWidget):
         layout.addLayout(grid)
 
         label = QLabel(title)
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 10px; color: #ffffff; margin-top: 2px; background: #2B2B2B")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setObjectName("GroupTitle")
         layout.addWidget(label)
 
+        self.init_stylesheet()
+
+    def init_stylesheet(self):
         self.setStyleSheet("""
-        RibbonGroup {
-            background: #2b2b2b;
-            border: 1px solid #444;
-        }
-        QToolButton {
-            background: #3c3c3c;
-            color: #eee;
-            font-size: 11px;
-            border: 1px solid #555;
-            padding: 3px 10px;
-        }
-        QToolButton:hover {
-            background: #505050;
-        }
-        QToolButton:pressed {
-            background: #666666;
-        }
+            RibbonGroup {
+                background-color: #252526;
+                border: 1px solid #3E3E3E;
+                border-radius: 6px;
+            }
+            QToolButton {
+                background-color: #2D2D30; 
+                color: #E0E0E0;
+                font-size: 11px;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                padding: 4px 8px;
+            }
+            QToolButton:hover {
+                background-color: #3E3E42;
+                border-color: #555555;
+                color: #FFFFFF;
+            }
+            QToolButton:pressed {
+                background-color: #b83b3b;
+                border-color: #8f0000;
+                color: #FFFFFF;
+            }
+            QLabel#GroupTitle {
+                font-size: 10px;
+                font-weight: bold;
+                color: #858585;
+                background: transparent;
+                text-transform: uppercase;
+                margin-top: 4px;
+            }
         """)
 
 
 class RibbonMenu(QWidget):
-    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops):
-        super().__init__()
+    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops, parent=None):
+        super().__init__(parent)
 
         self.file_ops = file_ops
         self.edit_ops = edit_ops
@@ -319,6 +431,7 @@ class RibbonMenu(QWidget):
         for tab_name in ["Home", "Insert", "Export", "Advanced", "Help"]:
             self.tab_bar.addTab(tab_name)
         self.tab_bar.setExpanding(False)
+        self.tab_bar.setDrawBase(False)
         layout.addWidget(self.tab_bar)
 
         self.stack = QStackedWidget()
@@ -337,27 +450,36 @@ class RibbonMenu(QWidget):
         self.stack.addWidget(self.help_tab)
 
         self.tab_bar.currentChanged.connect(self.stack.setCurrentIndex)
+        self.init_global_stylesheet()
 
+    def init_global_stylesheet(self):
         self.setStyleSheet("""
-        QTabBar::tab {
-            padding: 4px 18px;
-            background: #3c3c3c;
-            color: #eee;
-            
-            font-weight: 600;
-            font-size: 13px;
-            border: none;
-            margin-right: 1px;
-        }
-        QTabBar::tab:selected {
-            background: #8f0000;
-        }
-        QTabBar::tab:hover {
-            background: #b83b3b;
-        }
-        QWidget#RibbonContent {
-            background: #2b2b2b;
-        }
+            QTabBar {
+                background-color: #1E1E1E;
+                qproperty-drawBase: 0;
+            }
+            QTabBar::tab {
+                padding: 6px 20px;
+                background-color: #1E1E1E;
+                color: #969696;
+                font-size: 12px;
+                font-weight: 500;
+                border: none;
+                border-bottom: 2px solid transparent;
+            }
+            QTabBar::tab:hover {
+                color: #E0E0E0;
+                background-color: #2D2D2D;
+            }
+            QTabBar::tab:selected {
+                color: #FFFFFF;
+                background-color: #2B2B2B;
+                border-bottom: 2px solid #8f0000;
+            }
+            QWidget#RibbonContent {
+                background-color: #272626;
+                border-top: 1px solid #2D2D2D;
+            }
         """)
 
     def make_home_tab(self):
@@ -365,29 +487,26 @@ class RibbonMenu(QWidget):
         tab.setObjectName("RibbonContent")
 
         layout = QHBoxLayout(tab)
-        layout.setContentsMargins(8, 8, 8, 4)
-        layout.setSpacing(8)
-
-        font_group = RibbonGroup("Font", [
-            ["Bold", "Italic", "Underline", "Super", "Center"],
-            ["Bold and Italic", "Code", "Highlight", "Sub", "Comment"],
-        ])
-
-        clipboard_group = RibbonGroup("Clipboard", [
-            ["Cut", "Copy"],
-            ["Paste", "Select All"]
-        ])
-
-        edit_group = RibbonGroup("Edit", [
-            ["Undo", "Find"],
-            ["Redo", "Find and Replace"]
-        ])
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(10)
 
         file_group = RibbonGroup("File", [
             ["Save", "Save as"],
             ["Open", "New"]
         ])
-        
+        edit_group = RibbonGroup("Edit", [
+            ["Undo", "Find"],
+            ["Redo", "Find and Replace"]
+        ])
+        clipboard_group = RibbonGroup("Clipboard", [
+            ["Cut", "Copy"],
+            ["Paste", "Select All"]
+        ])
+        font_group = RibbonGroup("Font", [
+            ["Bold", "Italic", "Underline", "Super", "Center"],
+            ["Bold and Italic", "Code", "Highlight", "Sub", "Comment"],
+        ])
+
         file_group.buttons["Save"].clicked.connect(self.file_ops["save"])
         file_group.buttons["Save as"].clicked.connect(self.file_ops["save_as"])
         file_group.buttons["Open"].clicked.connect(self.file_ops["open"])
@@ -413,7 +532,6 @@ class RibbonMenu(QWidget):
         font_group.buttons["Highlight"].clicked.connect(self.font_ops["highlight"])
         font_group.buttons["Underline"].clicked.connect(self.font_ops["underline"])
         font_group.buttons["Center"].clicked.connect(self.font_ops["center"])
-        
 
         layout.addWidget(file_group)
         layout.addWidget(edit_group)
@@ -422,14 +540,13 @@ class RibbonMenu(QWidget):
         layout.addStretch()
         return tab
 
-
     def make_insert_tab(self):
         tab = QWidget()
         tab.setObjectName("RibbonContent")
 
         layout = QHBoxLayout(tab)
-        layout.setContentsMargins(8, 8, 8, 4)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(10)
 
         insert_group = RibbonGroup("Insert", [
             ["Box", "Box Warning", "Note", "Table", "Pie Chart", "Root"],
@@ -453,14 +570,13 @@ class RibbonMenu(QWidget):
         layout.addStretch()
         return tab
 
-
     def make_export_tab(self):
         tab = QWidget()
         tab.setObjectName("RibbonContent")
 
         layout = QHBoxLayout(tab)
-        layout.setContentsMargins(8, 8, 8, 4)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(10)
 
         export_group = RibbonGroup("Export", [
             ["Export File", "Print"],
@@ -481,8 +597,8 @@ class RibbonMenu(QWidget):
         tab.setObjectName("RibbonContent")
 
         layout = QHBoxLayout(tab)
-        layout.setContentsMargins(8, 8, 8, 4)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(10)
 
         advanced_group = RibbonGroup("Advanced", [
             ["Cleanup temporary directories", "Open application directory"],
@@ -498,12 +614,11 @@ class RibbonMenu(QWidget):
         layout.addStretch()
         return tab
 
-
     def make_help_tab(self):
         tab = QWidget()
         tab.setObjectName("RibbonContent")
         layout = QHBoxLayout(tab)
-        layout.setContentsMargins(8, 8, 8, 4)
+        layout.setContentsMargins(10, 10, 10, 8)
         layout.setSpacing(10)
 
         help_group = RibbonGroup("Help", [
@@ -535,10 +650,7 @@ class RibbonMenu(QWidget):
         return tab
     
 
-
-
-
-
+# Highlighter
 class AScriptHighlighter(QSyntaxHighlighter):
     def __init__(self, document):
         super().__init__(document)
@@ -577,7 +689,6 @@ class AScriptHighlighter(QSyntaxHighlighter):
             "table_header":  QColor("#85E89D"),
             "table_value":   QColor("#B5CEA8"),
         }
-
 
         def fmt(color):
             f = QTextCharFormat()
@@ -665,6 +776,7 @@ class AScriptHighlighter(QSyntaxHighlighter):
                 self.setFormat(start, end - start, fmt)
 
 
+# Editor
 class AScriptEditor(QPlainTextEdit):
     TAB = " " * 4
 
@@ -849,7 +961,81 @@ class SymbolReferenceDialog(QDialog):
         self.setWindowTitle("Symbol Reference")
         self.resize(760, 560)
 
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1E1E1E;
+                color: #D4D4D4;
+            }
+            
+            QLineEdit {
+                background-color: #2D2D2D;
+                color: #FFFFFF;
+                border: 1px solid #3E3E3E;
+                border-radius: 4px;
+                padding: 6px 10px;
+                font-size: 13px;
+                selection-background-color: #8f0000;
+                margin-bottom: 4px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #8f0000;
+                background-color: #1E1E1E;
+            }
+
+            QTabWidget::pane {
+                border: 1px solid #2D2D2D;
+                background-color: #252526;
+                border-radius: 4px;
+                top: -1px;
+            }
+            
+            QTabBar::tab {
+                background-color: transparent;
+                color: #858585;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: 500;
+                border-bottom: 2px solid transparent;
+                margin-right: 4px;
+            }
+            QTabBar::tab:hover {
+                color: #CCCCCC;
+                background-color: #2D2D2D;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                color: #FFFFFF;
+                background-color: #252526;
+                border-bottom: 2px solid #8f0000;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+
+            QPushButton {
+                background-color: #2D2D30;
+                color: #E0E0E0;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                padding: 5px 14px;
+                font-size: 12px;
+                margin-top: 8px;
+            }
+            QPushButton:hover {
+                background-color: #3E3E42;
+                border-color: #555555;
+                color: #FFFFFF;
+            }
+            QPushButton:pressed {
+                background-color: #b83b3b;
+                border-color: #8f0000;
+                color: #FFFFFF;
+            }
+        """)
+
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("Search shortcut, symbol, or description…")
@@ -867,7 +1053,7 @@ class SymbolReferenceDialog(QDialog):
 
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
-        layout.addWidget(close_btn, alignment=Qt.AlignRight)
+        layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
     def _add_tab(self, name, data):
         table = FilterableTable(data)
@@ -882,6 +1068,8 @@ class SymbolReferenceDialog(QDialog):
     # going to replace this in the next update.
 
     # update 19/04/2026 - I, in fact, did not replace it.
+
+    # update 13/07/2026 - It's coming soon, I promise...
     def math_symbols(self):
         return [
             ("<->", "↔", "Logical equivalence / bidirectional arrow"),
@@ -1033,7 +1221,7 @@ class SymbolReferenceDialog(QDialog):
         ]
 
 
-
+# Main
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1230,8 +1418,6 @@ class MainWindow(QMainWindow):
         else:
             self.setWindowTitle(f"{base} – {name}")
 
-
-
     def maybe_save(self) -> bool:
             if not self.document_modified:
                 return True
@@ -1258,7 +1444,6 @@ class MainWindow(QMainWindow):
 
             return False
 
-
     def new_file(self):
         if getattr(sys, "frozen", False):
             # Build > relaunch exe without args
@@ -1266,7 +1451,6 @@ class MainWindow(QMainWindow):
         else:
             # Normal Python > relaunch script with interpreter
             subprocess.Popen([sys.executable, sys.argv[0]])
-
 
     def save_file(self):
         if not self.current_file:
@@ -1277,7 +1461,6 @@ class MainWindow(QMainWindow):
 
         self.document_modified = False
         self.update_window_title()
-
 
     def save_file_as(self):
         editor_text = self.editor.toPlainText()
@@ -1318,8 +1501,6 @@ class MainWindow(QMainWindow):
         self.current_file = path
         self.save_file()
 
-
-
     def open_file(self):
         if not self.maybe_save():
             return
@@ -1337,7 +1518,6 @@ class MainWindow(QMainWindow):
         self.document_modified = False
         self.update_window_title()
 
-        
     def open_file_from_args(self):
         if len(sys.argv) < 2:
             return
@@ -1358,9 +1538,6 @@ class MainWindow(QMainWindow):
         self.document_modified = False
         self.update_window_title()
 
-    
-
-
     def export_file(self):
         text = self.editor.toPlainText()
 
@@ -1373,7 +1550,6 @@ class MainWindow(QMainWindow):
 
         if outfile:
             export_standalone_html(text, outfile)
-
 
     def export_file_to_pdf(self):
         text = self.editor.toPlainText()
@@ -1394,7 +1570,6 @@ class MainWindow(QMainWindow):
         export_standalone_html(text, tmp.name)
 
         self.convert_to_pdf(tmp.name, pdf_path)
-
 
     def convert_to_pdf(self, html_path: str, pdf_path: str):
         page = QWebEnginePage()
@@ -1417,7 +1592,6 @@ class MainWindow(QMainWindow):
         url = QUrl.fromLocalFile(os.path.abspath(html_path))
         page.loadFinished.connect(handle_load_finished)
         page.load(url)
-
 
     def print_document(self):
         try:
@@ -1473,13 +1647,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             error(f"Failed to print document: {e}")
 
-
     def copy_html(self):
         html = build_standalone_html(self.editor.toPlainText())
         QGuiApplication.clipboard().setText(html)
-
-
-
 
     def undo(self):
         self.editor.undo()
@@ -1569,7 +1739,6 @@ class MainWindow(QMainWindow):
         cursor.endEditBlock()
         self.editor.setTextCursor(cursor)
 
-
     def sanitize_traceback(self, exc: Exception) -> str:
         tb = traceback.extract_tb(exc.__traceback__)
         lines = []
@@ -1583,7 +1752,6 @@ class MainWindow(QMainWindow):
             + "\n".join(lines)
             + f"\n\n{type(exc).__name__}: {exc}"
         )
-
 
     def update_preview(self):
         source = self.editor.toPlainText()
@@ -1630,103 +1798,141 @@ class MainWindow(QMainWindow):
             self.preview.setHtml(error_html)
             error(f"Failed to compile: {e}")
 
-
     def show_license(self):
         dlg = QDialog(self)
         dlg.setWindowTitle("License")
-        dlg.resize(400, 300)
+        dlg.resize(550, 450)
 
-        layout = QVBoxLayout(dlg)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(10)
+        dlg.setStyleSheet("""
+            QDialog {
+                background-color: #1E1E1E;
+                color: #D4D4D4;
+            }
+            QScrollArea {
+                border: 1px solid #2D2D2D;
+                background-color: #1E1E1E;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #1E1E1E;
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #424242;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #4F4F4F;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                border: none;
+                background: none;
+            }
+            QLabel {
+                color: #CCCCCC;
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            h1 {
+                color: #FFFFFF;
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 5px;
+            }
+            h2 {
+                color: #8f0000;
+                font-size: 14px;
+                font-weight: 600;
+                margin-top: 15px;
+                margin-bottom: 5px;
+            }
+            hr {
+                border: none;
+                border-top: 1px solid #333333;
+            }
+        """)
+
+        main_layout = QVBoxLayout(dlg)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(15)
 
         icon_row = QHBoxLayout()
-        icon_row.setSpacing(15)
-        icon_row.setContentsMargins(0, 0, 0, 0)
-
-        pixmap = QPixmap(resource_path("apbl.png"))
-        if not pixmap.isNull():
-            icon_label = QLabel(dlg)
-            icon_label.setPixmap(
-                pixmap.scaled(161, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            )
-            icon_label.setAlignment(Qt.AlignCenter)
-            icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            icon_label.setFixedSize(161, 60)
-            icon_row.addWidget(icon_label)
-
-        pixmap_apbl = QPixmap(resource_path("annascriptstudio.png"))
-        if not pixmap_apbl.isNull():
-            icon_label_apbl = QLabel(dlg)
-            icon_label_apbl.setPixmap(
-                pixmap_apbl.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            )
-            icon_label_apbl.setAlignment(Qt.AlignCenter)
-            icon_label_apbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            icon_label_apbl.setFixedSize(60, 60)
-            icon_row.addWidget(icon_label_apbl)
-
-        pixmap_an = QPixmap(resource_path("annascript.png"))
-        if not pixmap_an.isNull():
-            icon_label_an = QLabel(dlg)
-            icon_label_an.setPixmap(
-                pixmap_an.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            )
-            icon_label_an.setAlignment(Qt.AlignCenter)
-            icon_label_an.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            icon_label_an.setFixedSize(60, 60)
-            icon_row.addWidget(icon_label_an)
-
-        icon_row.addStretch(1)
-
-        layout.addLayout(icon_row)
+        icon_row.setSpacing(16)
         
-        license_label = QLabel("""
-<h1>License</h1>
-                            
-The following part of the license applies to both <i>annaScript Studio</i><br>
-(The GUI editor) and <i>annaScript</i> (The markup language):
+        icons_to_load = [
+            ("apbl.png", 161, 60),
+            ("annascriptstudio.png", 60, 60),
+            ("annascript.png", 60, 60)
+        ]
 
-<h2>MIT License</h2>
+        for filename, width, height in icons_to_load:
+            pixmap = QPixmap(resource_path(filename))
+            if not pixmap.isNull():
+                lbl = QLabel()
+                lbl.setPixmap(pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                lbl.setFixedSize(width, height)
+                icon_row.addWidget(lbl)
+                
+        icon_row.addStretch()
+        main_layout.addLayout(icon_row)
 
-Copyright (c) 2025-2026 <i>Annabeth Kisling (tk_dev / hasderhi)</i><br><br>
+        scroll = QScrollArea(dlg)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        
+        scroll_content = QWidget()
+        scroll_content.setObjectName("ScrollContent")
+        scroll_content.setStyleSheet("background-color: #1E1E1E;")
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setContentsMargins(0, 0, 10, 0)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy<br>
-of this software and associated documentation files (the "Software"), to deal<br>
-in the Software without restriction, including without limitation the rights<br>
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell<br>
-copies of the Software, and to permit persons to whom the Software is furnished<br>
-to do so, subject to the following conditions:<br><br>
+        license_text = """
+        <h1>License</h1>
+        <p>The following part of the license applies to both <i>annaScript Studio</i> (The GUI editor) 
+        and <i>annaScript</i> (The markup language):</p>
 
-The above copyright notice and this permission notice shall be included in all<br>
-copies or substantial portions of the Software.<br><br>
+        <h2>MIT License</h2>
+        <p>Copyright (c) 2025-2026 <b>Annabeth Kisling (tk_dev / hasderhi)</b></p>
+        
+        <p>Permission is hereby granted, free of charge, to any person obtaining a copy 
+        of this software and associated documentation files (the "Software"), to deal 
+        in the Software without restriction, including without limitation the rights 
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+        copies of the Software, and to permit persons to whom the Software is furnished 
+        to do so, subject to the following conditions:</p>
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR<br>
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,<br>
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE<br>
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,<br>
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN<br>
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.<br><br>
+        <p>The above copyright notice and this permission notice shall be included in all 
+        copies or substantial portions of the Software.</p>
 
-<hr><br>
-                               
-The following part of the license <b>only</b> applies to<br>
-<i>annaScript Studio</i> (The GUI editor):
+        <p style="font-family: monospace; color: #A0A0A0; font-size: 11px;">THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+        WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+        CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
-<h2>Note on third-party libraries:</h2>
+        <hr>
 
-This application ("annaScript Studio") uses <b>PySide6</b> (Qt for Python) for its GUI framework. PySide6<br>
-is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your application.<br><br>
+        <p>The following part of the license <b>only</b> applies to <i>annaScript Studio</i> (The GUI editor):</p>
 
-The editor font used in <i>annaScript Studio</i> is <b>JetBrains Mono</b> by <i>JetBrains s.r.o</i>.<br>
-This font is licensed under the <b>SIL Open Font License 1.1</b>.
-""", dlg)
-        license_label.setAlignment(Qt.AlignLeft)
-        license_label.setTextFormat(Qt.RichText)
-        layout.addWidget(license_label)
+        <h2>Note on Third-Party Libraries</h2>
+        <p>This application ("annaScript Studio") uses <b>PySide6</b> (Qt for Python) for its GUI framework. 
+        PySide6 is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your application.</p>
 
+        <p>The editor font used in <i>annaScript Studio</i> is <b>JetBrains Mono</b> by <i>JetBrains s.r.o</i>. 
+        This font is licensed under the <b>SIL Open Font License 1.1</b>.</p>
+        """
 
+        license_label = QLabel(license_text)
+        license_label.setTextFormat(Qt.TextFormat.RichText)
+        license_label.setWordWrap(True)
 
+        scroll_layout.addWidget(license_label)
+        scroll.setWidget(scroll_content)
+        
+        main_layout.addWidget(scroll)
         dlg.exec()
 
     def show_symbol_ref(self):
@@ -1735,92 +1941,114 @@ This font is licensed under the <b>SIL Open Font License 1.1</b>.
 
     def show_about(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle("About annaScript Studio")
-        dlg.resize(400, 300)
+        dlg.setWindowTitle("About")
+        dlg.setFixedSize(580, 360)
 
-        layout = QVBoxLayout(dlg)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(10)
+        dlg.setStyleSheet("""
+            QDialog {
+                background-color: #1E1E1E;
+                color: #D4D4D4;
+            }
+            QFrame#card {
+                background-color: #252526;
+                border: 1px solid #3E3E3E;
+                border-radius: 6px;
+            }
+            QLabel {
+                color: #CCCCCC;
+                font-size: 12px;
+            }
+            QLabel#Title {
+                color: #FFFFFF;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            QLabel#Version {
+                color: #007ACC;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QLabel#Author {
+                color: #858585;
+                font-size: 11px;
+            }
+            a {
+                color: #569CD6;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+        """)
 
-        pixmap = QPixmap(resource_path("annascriptstudio.png"))
-        if not pixmap.isNull():
-            icon_label = QLabel(dlg)
-            icon_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            icon_label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(icon_label)
+        main_layout = QVBoxLayout(dlg)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(12)
 
-        title_label = QLabel("annaScript Studio", dlg)
-        title_font = QFont("Arial", 18, QFont.Bold)
-        title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label)
+        columns_layout = QHBoxLayout()
+        columns_layout.setSpacing(15)
 
-        version_label = QLabel(f"{CURRENT_VERSION}", dlg)
-        version_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(version_label)
+        def create_product_card(logo_name, title, version, author):
+            card = QFrame()
+            card.setObjectName("card")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(15, 15, 15, 15)
+            card_layout.setSpacing(6)
+            card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        dev_label = QLabel("Developed by Annabeth Kisling", dlg)
-        dev_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(dev_label)
+            pixmap = QPixmap(resource_path(logo_name))
+            if not pixmap.isNull():
+                icon_lbl = QLabel()
+                icon_lbl.setPixmap(pixmap.scaled(56, 56, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                card_layout.addWidget(icon_lbl)
 
-        website_label = QLabel('<a href="https://tk-dev-software.com">tk-dev-software.com</a>', dlg)
-        website_label.setAlignment(Qt.AlignCenter)
-        website_label.setTextFormat(Qt.RichText)
-        website_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        website_label.setOpenExternalLinks(True)
-        website_label.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(website_label)
+            t_lbl = QLabel(title)
+            t_lbl.setObjectName("Title")
+            t_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            card_layout.addWidget(t_lbl)
 
-        github_label = QLabel('<a href="https://github.com/hasderhi">@hasderhi on GitHub</a>', dlg)
-        github_label.setAlignment(Qt.AlignCenter)
-        github_label.setTextFormat(Qt.RichText)
-        github_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        github_label.setOpenExternalLinks(True)
-        github_label.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(github_label)
+            v_lbl = QLabel(f"Version {version}")
+            v_lbl.setObjectName("Version")
+            v_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            card_layout.addWidget(v_lbl)
 
-        separator_label = QLabel('<hr>', dlg)
-        separator_label.setAlignment(Qt.AlignCenter)
-        separator_label.setTextFormat(Qt.RichText)
-        layout.addWidget(separator_label)
+            a_lbl = QLabel(author)
+            a_lbl.setObjectName("Author")
+            a_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            card_layout.addWidget(a_lbl)
 
-        pixmap_an = QPixmap(resource_path("annascript.png"))
-        if not pixmap_an.isNull():
-            icon_label_an = QLabel(dlg)
-            icon_label_an.setPixmap(pixmap_an.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            icon_label_an.setAlignment(Qt.AlignCenter)
-            layout.addWidget(icon_label_an)
+            links_layout = QHBoxLayout()
+            links_layout.setSpacing(10)
+            links_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        title_label_an = QLabel("annaScript", dlg)
-        title_font_an = QFont("Arial", 18, QFont.Bold)
-        title_label_an.setFont(title_font_an)
-        title_label_an.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label_an)
+            def make_link(text, url):
+                lbl = QLabel(f'<a href="{url}">{text}</a>')
+                lbl.setTextFormat(Qt.TextFormat.RichText)
+                lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+                lbl.setOpenExternalLinks(True)
+                lbl.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+                return lbl
 
-        version_label_an = QLabel(f"{CURRENT_ANNASCRIPT_VERSION}", dlg)
-        version_label_an.setAlignment(Qt.AlignCenter)
-        layout.addWidget(version_label_an)
+            links_layout.addWidget(make_link("Website", "https://tk-dev-software.com"))
+            links_layout.addWidget(make_link("GitHub", "https://github.com/hasderhi"))
+            card_layout.addLayout(links_layout)
 
-        dev_label_an = QLabel("Developed by Annabeth Kisling", dlg)
-        dev_label_an.setAlignment(Qt.AlignCenter)
-        layout.addWidget(dev_label_an)
+            return card
 
-        website_label_an = QLabel('<a href="https://tk-dev-software.com">tk-dev-software.com</a>', dlg)
-        website_label_an.setAlignment(Qt.AlignCenter)
-        website_label_an.setTextFormat(Qt.RichText)
-        website_label_an.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        website_label_an.setOpenExternalLinks(True)
-        website_label_an.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(website_label_an)
+        studio_card = create_product_card(
+            "annascriptstudio.png", "annaScript Studio", f"{CURRENT_VERSION}", "Developed by Annabeth Kisling"
+        )
+        language_card = create_product_card(
+            "annascript.png", "annaScript Core", f"{CURRENT_ANNASCRIPT_VERSION}", "Developed by Annabeth Kisling"
+        )
 
-        github_label_an = QLabel('<a href="https://github.com/hasderhi">@hasderhi on GitHub</a>', dlg)
-        github_label_an.setAlignment(Qt.AlignCenter)
-        github_label_an.setTextFormat(Qt.RichText)
-        github_label_an.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        github_label_an.setOpenExternalLinks(True)
-        github_label_an.setCursor(QCursor(Qt.PointingHandCursor))
-        layout.addWidget(github_label_an)
+        columns_layout.addWidget(studio_card)
+        columns_layout.addWidget(language_card)
+        main_layout.addLayout(columns_layout)
+
         dlg.exec()
+
 
     def cleanup_tempdir(self):
         cleanup_force()
@@ -1835,7 +2063,6 @@ This font is licensed under the <b>SIL Open Font License 1.1</b>.
         msg.setDefaultButton(QMessageBox.Ok)
         msg.exec()
 
-        
     def open_tempdir(self):
         open_file_or_dir(f"{tempfile.gettempdir()}/ascriptstudio")
 
@@ -1860,63 +2087,64 @@ This font is licensed under the <b>SIL Open Font License 1.1</b>.
             event.ignore()
 
 
+# run entry
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
 
     app.setStyleSheet("""
-QMainWindow, QWidget {
-    background-color: #202020;
-    color: #ffffff;
-}
-""")
-    
-
+    QMainWindow, QWidget {
+        background-color: #202020;
+        color: #ffffff;
+    }
+    """)
     
     # custom scrollbar because PySide defaults to a very 1995 one if global styles are overwritten
-    app.setStyleSheet("""QScrollBar:vertical {
-    border: none;
-    background: transparent;
-    width: 15px;
-    margin: 0px;
-}
+    app.setStyleSheet("""
+    QScrollBar:vertical {
+        border: none;
+        background: transparent;
+        width: 15px;
+        margin: 0px;
+    }
 
-QScrollBar:horizontal {
-    border: none;
-    background: transparent;
-    height: 10px;
-    margin: 0px;
-}
+    QScrollBar:horizontal {
+        border: none;
+        background: transparent;
+        height: 10px;
+        margin: 0px;
+    }
 
-QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-    background: #444444;
-    min-height: 20px;
-    min-width: 20px;
-    border-radius: 5px;
-    margin: 2px
-}
+    QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+        background: #444444;
+        min-height: 20px;
+        min-width: 20px;
+        border-radius: 5px;
+        margin: 2px
+    }
 
-QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
-    background: #666666;
-}
+    QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+        background: #666666;
+    }
 
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    border: none;
-    background: none;
-    height: 0px;
-    width: 0px;
-}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+        border: none;
+        background: none;
+        height: 0px;
+        width: 0px;
+    }
 
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: none;
-}""")
-
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+    QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+        background: none;
+    }""")
 
     win = MainWindow()
     win.show()
     success("Created main window")
     app.exec()
 
+
+# exit
 success("Process exited")
