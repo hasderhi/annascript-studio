@@ -906,8 +906,8 @@ class AScriptEditor(QPlainTextEdit):
         self.setTextCursor(cursor)
 
 
-# the amount of code needed just to prevent QtWebEngine from opening non-local 
-# links is absolutely hilarious. i guess chromium just likes to open web pages.
+# the amount of code needed just to (reliably) prevent QtWebEngine from opening non-local 
+# links is absolutely hilarious. well, i guess chromium just likes to open web pages.
 class CustomWebEnginePage(QWebEnginePage):
     def acceptNavigationRequest(self, url: QUrl, _type, isMainFrame):
         url_str = url.toString()
