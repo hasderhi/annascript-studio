@@ -1641,45 +1641,53 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
 
         icon_row = QHBoxLayout()
-        icon_row.setSpacing(0)
+        icon_row.setSpacing(15)
         icon_row.setContentsMargins(0, 0, 0, 0)
 
-        pixmap = QPixmap(resource_path("annascriptstudio.png"))
+        pixmap = QPixmap(resource_path("apbl.png"))
         if not pixmap.isNull():
             icon_label = QLabel(dlg)
             icon_label.setPixmap(
-                pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.scaled(161, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
             icon_label.setAlignment(Qt.AlignCenter)
             icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            icon_label.setFixedSize(64, 64)
+            icon_label.setFixedSize(161, 60)
             icon_row.addWidget(icon_label)
+
+        pixmap_apbl = QPixmap(resource_path("annascriptstudio.png"))
+        if not pixmap_apbl.isNull():
+            icon_label_apbl = QLabel(dlg)
+            icon_label_apbl.setPixmap(
+                pixmap_apbl.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+            icon_label_apbl.setAlignment(Qt.AlignCenter)
+            icon_label_apbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            icon_label_apbl.setFixedSize(60, 60)
+            icon_row.addWidget(icon_label_apbl)
 
         pixmap_an = QPixmap(resource_path("annascript.png"))
         if not pixmap_an.isNull():
             icon_label_an = QLabel(dlg)
             icon_label_an.setPixmap(
-                pixmap_an.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap_an.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
             icon_label_an.setAlignment(Qt.AlignCenter)
             icon_label_an.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-            icon_label_an.setFixedSize(64, 64)
+            icon_label_an.setFixedSize(60, 60)
             icon_row.addWidget(icon_label_an)
 
+        icon_row.addStretch(1)
+
         layout.addLayout(icon_row)
-
-
-        title_label = QLabel("License", dlg)
-        title_font = QFont("Arial", 18, QFont.Bold)
-        title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label)
         
         license_label = QLabel("""
-The following part of the license applies to both<br>
-<i>annaScript Studio</i> (The GUI editor) and <i>annaScript</i> (The markup language):<br>
+<h1>License</h1>
+                            
+The following part of the license applies to both <i>annaScript Studio</i><br>
+(The GUI editor) and <i>annaScript</i> (The markup language):
 
-<b>MIT License</b><br><br>
+<h2>MIT License</h2>
 
 Copyright (c) 2025-2026 <i>Annabeth Kisling (tk_dev / hasderhi)</i><br><br>
 
@@ -1702,14 +1710,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.<br><b
 
 <hr><br>
                                
-The following part of the license <b>only</b> applies to <i>annaScript Studio</i> (The GUI editor):
+The following part of the license <b>only</b> applies to<br>
+<i>annaScript Studio</i> (The GUI editor):
 
-Note on third-party libraries:<br><br>
+<h2>Note on third-party libraries:</h2>
 
 This application ("annaScript Studio") uses <b>PySide6</b> (Qt for Python) for its GUI framework. PySide6<br>
-is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your application.
+is licensed under the <b>LGPLv3</b>, which allows dynamic linking in your application.<br><br>
+
+The editor font used in <i>annaScript Studio</i> is <b>JetBrains Mono</b> by <i>JetBrains s.r.o</i>.<br>
+This font is licensed under the <b>SIL Open Font License 1.1</b>.
 """, dlg)
-        license_label.setAlignment(Qt.AlignCenter)
+        license_label.setAlignment(Qt.AlignLeft)
         license_label.setTextFormat(Qt.RichText)
         layout.addWidget(license_label)
 

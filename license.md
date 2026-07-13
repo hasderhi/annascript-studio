@@ -21,9 +21,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-Note on third-party libraries:
+Note on third-party libraries/assets:
 
 The application *annaScript* does not use any external dependencies.
 
 The application *annaScript Studio* uses **PySide6** (Qt for Python) for its GUI framework. PySide6
 is licensed under the **LGPLv3**, which allows dynamic linking in your application.
+
+The editor font used in *annaScript Studio* is **JetBrains Mono** by *JetBrains s.r.o*. This font is
+licensed under the **SIL Open Font License 1.1**.
