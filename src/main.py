@@ -1468,7 +1468,7 @@ class MainWindow(QMainWindow):
 
         <div class="welcome-card">
             <h2>Welcome to annaScript Studio!</h2>
-            <div class="subtitle">Begin typing in the editor to dismiss this screen.</div>
+            <div class="subtitle">Begin typing in the editor or open a file to dismiss this screen.</div>
             
             <p>
                 Ready to write? Start a new document in the editor or open an existing one with <kbd>CTRL-O</kbd>.
