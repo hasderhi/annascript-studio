@@ -28,7 +28,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
-    QCursor, QAction, QGuiApplication
+    QCursor, QAction, QGuiApplication, QDesktopServices
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -64,6 +64,22 @@ CURRENT_VERSION = "v1.2.3"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 REPO_OWNER = "hasderhi" # change this if you've forked the repo
+
+# needed to prevent the preview from opening web links internally
+WEB_DOMAIN_REGEX = re.compile(
+    r'(?:^|/|//)([a-z0-9]+([\-.][a-z0-9]+)*\.[a-z]{2,})(?::[0-9]+)?(?:/.*)?$', 
+    re.IGNORECASE
+)
+
+# allowed extensions, everything else will not be opened by the preview.
+# this is only a draft, will revisit it when the asset logic is implemented.
+LOCAL_ASSET_EXTENSIONS = {
+    '.html', '.htm', '.xhtml', '.xml', '.json', '.js', '.css',
+    '.txt', '.md', '.pdf', '.csv', '.tsv',
+    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
+    '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
+    '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
+}
 
 
 # Startup and helpers
@@ -890,6 +906,43 @@ class AScriptEditor(QPlainTextEdit):
         self.setTextCursor(cursor)
 
 
+# the amount of code needed just to prevent QtWebEngine from opening non-local 
+# links is absolutely hilarious. i guess chromium just likes to open web pages.
+class CustomWebEnginePage(QWebEnginePage):
+    def acceptNavigationRequest(self, url: QUrl, _type, isMainFrame):
+        url_str = url.toString()
+        path_lower = url.path().lower()
+        
+        if _type == QWebEnginePage.NavigationType.NavigationTypeLinkClicked:
+            if path_lower.endswith(('.ascr', '.ascript')):
+                # future
+                debug(f"annaScript transfer link detected: {url_str}")
+                return False
+
+            has_local_ext = any(path_lower.endswith(ext) for ext in LOCAL_ASSET_EXTENSIONS)
+            is_localhost = url.host().lower() in ['localhost', '127.0.0.1'] or url.host().lower().endswith('.local')
+            
+            if has_local_ext or is_localhost:
+                return super().acceptNavigationRequest(url, _type, isMainFrame)
+
+            match = WEB_DOMAIN_REGEX.search(url_str)
+            if match:
+                extracted_domain = match.group(1)
+                if not any(extracted_domain.endswith(ext) for ext in LOCAL_ASSET_EXTENSIONS):
+                    if url.scheme() in ["http", "https"]:
+                        QDesktopServices.openUrl(url)
+                    else:
+                        QDesktopServices.openUrl(QUrl(f"http://{extracted_domain}"))
+                    return False
+                    
+            # Fallback
+            if url.scheme() in ["http", "https"]:
+                QDesktopServices.openUrl(url)
+                return False
+
+        return super().acceptNavigationRequest(url, _type, isMainFrame)
+
+
 class FilterableTable(QTableWidget):
     def __init__(self, rows):
         super().__init__(len(rows), 3)
@@ -1238,8 +1291,11 @@ class MainWindow(QMainWindow):
 
         self.editor = AScriptEditor()
         self.highlighter = AScriptHighlighter(self.editor.document())
+
         self.preview = QWebEngineView()
-        self.preview.setContextMenuPolicy(Qt.NoContextMenu)
+        self.preview.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        self.page = CustomWebEnginePage(self.preview)
+        self.preview.setPage(self.page)
 
         splitter.addWidget(self.editor)
         splitter.addWidget(self.preview)
@@ -1334,6 +1390,105 @@ class MainWindow(QMainWindow):
 
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
+
+        welcome_html = f"""
+        <html>
+        <head>
+        <style>
+            body {{
+                background-color: #1E1E1E;
+                color: #D4D4D4;
+                font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+                font-size: 13px;
+                line-height: 1.5;
+                padding: 20px;
+                margin: 0;
+            }}
+            .welcome-card {{
+                background-color: #252526;
+                border-left: 4px solid #8f0000;
+                border-top: 1px solid #3E3E3E;
+                border-right: 1px solid #3E3E3E;
+                border-bottom: 1px solid #3E3E3E;
+                border-radius: 4px;
+                padding: 20px;
+                margin-bottom: 16px;
+            }}
+            h2 {{
+                color: #FFFFFF;
+                font-size: 18px;
+                font-weight: 600;
+                margin-top: 0;
+                margin-bottom: 8px;
+            }}
+            .subtitle {{
+                color: #858585;
+                font-size: 12px;
+                font-style: italic;
+                margin-bottom: 16px;
+            }}
+            p {{
+                margin-top: 0;
+                margin-bottom: 14px;
+                color: #CCCCCC;
+            }}
+            .link-section {{
+                background-color: #1A1A1A;
+                border: 1px solid #2D2D2D;
+                border-radius: 4px;
+                padding: 12px 16px;
+                margin-top: 16px;
+            }}
+            .link-section h3 {{
+                color: #8f0000;
+                font-size: 12px;
+                margin-top: 0;
+                margin-bottom: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            ul {{
+                margin: 0;
+                padding-left: 20px;
+                color: #B0B0B0;
+            }}
+            li {{
+                margin-bottom: 6px;
+            }}
+            a {{
+                color: #b83b3b;
+                text-decoration: none;
+            }}
+            a:hover {{
+                text-decoration: underline;
+            }}
+        </style>
+        </head>
+        <body>
+
+        <div class="welcome-card">
+            <h2>Welcome to annaScript Studio!</h2>
+            <div class="subtitle">Begin typing in the editor to dismiss this screen.</div>
+            
+            <p>
+                Ready to write? Start a new document in the editor or open an existing one with <kbd>CTRL-O</kbd>.
+                Hope you enjoy using annaScript!
+            </p>
+
+            <div class="link-section">
+                <h3>Useful Resources</h3>
+                <ul>
+                    <li>Visit the project page: <a href="https://tk-dev-software.com/annascript">tk-dev-software.com/annascript</a></li>
+                    <li>Read the setup guide: <a href="https://github.com/hasderhi/annascript-studio?tab=readme-ov-file">annaScript Studio README</a></li>
+                    <li>Follow the developer: <a href="https://github.com/hasderhi">@hasderhi on GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        </body>
+        </html>
+        """
+        self.preview.setHtml(welcome_html)
 
     def show_update_dialog(self, LATEST_VERSION):
         info("Notifying user...")
@@ -1766,32 +1921,107 @@ class MainWindow(QMainWindow):
             safe_tb = self.sanitize_traceback(e)
             error_html = f"""
             <html>
-            <body style="background:#1e1e1e;color:#e6e6e6;padding:1.5rem;font-family:Segoe UI, Arial;">
-            <h2 style="color:#ff7777;">Compiler Error</h2>
+            <head>
+            <style>
+                body {{
+                    background-color: #1E1E1E;
+                    color: #D4D4D4;
+                    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    padding: 20px;
+                    margin: 0;
+                }}
 
-            <p>
-                The compiler stopped because it encountered invalid annaScript syntax.
-            </p>
+                .error-card {{
+                    background-color: #252526;
+                    border-left: 4px solid #b83b3b;
+                    border-top: 1px solid #3E3E3E;
+                    border-right: 1px solid #3E3E3E;
+                    border-bottom: 1px solid #3E3E3E;
+                    border-radius: 4px;
+                    padding: 16px;
+                    margin-bottom: 16px;
+                }}
+                h2 {{
+                    color: #8f0000;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-top: 0;
+                    margin-bottom: 10px;
+                }}
+                p {{
+                    margin-top: 0;
+                    margin-bottom: 12px;
+                    color: #CCCCCC;
+                }}
+                ul {{
+                    margin: 0 0 16px 0;
+                    padding-left: 20px;
+                    color: #B0B0B0;
+                }}
+                li {{
+                    margin-bottom: 6px;
+                }}
+                details {{
+                    background-color: #1A1A1A;
+                    border: 1px solid #2D2D2D;
+                    border-radius: 4px;
+                    margin-top: 12px;
+                }}
+                summary {{
+                    padding: 8px 12px;
+                    font-weight: 600;
+                    color: #E57373;
+                    cursor: pointer;
+                    outline: none;
+                    user-select: none;
+                }}
+                summary:hover {{
+                    color: #EF9A9A;
+                    background-color: #222222;
+                }}
+                pre {{
+                    background-color: #111111;
+                    padding: 12px;
+                    margin: 0;
+                    border-top: 1px solid #2D2D2D;
+                    color: #FF8A80;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 12px;
+                    overflow-x: auto;
+                    white-space: pre-wrap; /* Wrap long tracebacks beautifully */
+                }}
+                .footer {{
+                    font-size: 11px;
+                    color: #858585;
+                    margin-top: 16px;
+                    border-top: 1px solid #2D2D2D;
+                    padding-top: 12px;
+                }}
+            </style>
+            </head>
+            <body>
+            <div class="error-card">
+                <h2>Compiler Error</h2>
+                <p>The compiler stopped because it encountered invalid annaScript syntax.</p>
+                
+                <ul>
+                    <li>Check for missing brackets, macros, or keywords</li>
+                    <li>Make sure all macros are properly closed</li>
+                    <li>Verify indentation and nesting</li>
+                </ul>
 
-            <ul>
-                <li>Check for missing brackets, macros, or keywords</li>
-                <li>Make sure all macros are properly closed</li>
-                <li>Verify indentation and nesting</li>
-            </ul>
+                <details>
+                    <summary>Show technical details</summary>
+                    <pre>{html.escape(safe_tb)}</pre>
+                </details>
+            </div>
 
-            <details style="margin-top:1rem;">
-                <summary style="cursor:pointer;color:#ffaaaa;">
-                Show technical details
-                </summary>
-                <pre style="background:#111;padding:0.75rem;border-radius:4px;color:#ff9999;">
-{html.escape(safe_tb)}
-                </pre>
-            </details>
+            <div class="footer">
+                If the error persists, contact the developer via <b>Help → Report a Bug</b>.
+            </div>
 
-            <p style="margin-top:1rem;font-size:0.9em;color:#bbbbbb;">
-                If the error persists, contact the developer via
-                <b>Help → Report a Bug</b>.
-            </p>
             </body>
             </html>
             """
