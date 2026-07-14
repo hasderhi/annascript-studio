@@ -63,7 +63,9 @@ DO_NOT_CHECK_FOR_UPDATES = False
 CURRENT_VERSION = "v1.2.3"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
-REPO_OWNER = "hasderhi" # change this if you've forked the repo
+# change these if you've forked the repo
+REPO_OWNER = "hasderhi"
+REPO_NAME = "annascript-studio" 
 
 # needed to prevent the preview from opening web links internally
 WEB_DOMAIN_REGEX = re.compile(
@@ -130,9 +132,9 @@ def get_latest_version(repo_owner, repo_name):
 
 update_available = False
 
-LATEST_VERSION = get_latest_version(REPO_OWNER, "annascript-studio")
+LATEST_VERSION = get_latest_version(REPO_OWNER, REPO_NAME)
 
-if LATEST_VERSION != None:
+if LATEST_VERSION:
     if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
         info(f"Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
         update_available = True
