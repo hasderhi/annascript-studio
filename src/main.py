@@ -1497,21 +1497,71 @@ class MainWindow(QMainWindow):
     def show_update_dialog(self, LATEST_VERSION):
         info("Notifying user...")
         msg_box = QMessageBox(self)
-        pixmap = QPixmap(resource_path("annascriptstudio.png")).scaled(64, 64) 
-        msg_box.setIconPixmap(pixmap)
+
+        pixmap = QPixmap(resource_path("annascriptstudio.png"))
+        if not pixmap.isNull():
+            scaled_pixmap = pixmap.scaled(
+                64, 64, 
+                Qt.AspectRatioMode.KeepAspectRatio, 
+                Qt.TransformationMode.SmoothTransformation
+            )
+            msg_box.setIconPixmap(scaled_pixmap)
+            
         msg_box.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
         msg_box.setWindowTitle("Update Available")
         msg_box.setText(f"A new version ({LATEST_VERSION}) is available!")
         msg_box.setInformativeText("Would you like to go to the download page?")
         
-        download_button = msg_box.addButton("Download", QMessageBox.AcceptRole)
-        dismiss_button = msg_box.addButton("Later", QMessageBox.RejectRole)
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #1E1E1E;
+            }
+            QLabel {
+                color: #D4D4D4;
+                font-size: 13px;
+                background: transparent;
+            }
+            QLabel#qt_msgbox_label {
+                color: #FFFFFF;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #2D2D30;
+                color: #E0E0E0;
+                border: 1px solid #404040;
+                border-radius: 4px;
+                padding: 6px 16px;
+                font-size: 12px;
+                min-width: 75px;
+            }
+            QPushButton:hover {
+                background-color: #3E3E42;
+                border-color: #555555;
+                color: #FFFFFF;
+            }
+            QPushButton:default {
+                background-color:#8f0000;
+                border-color:#b83b3b;
+                color: #FFFFFF;
+            }
+            QPushButton:default:hover {
+                background-color:#b83b3b;
+                border-color:#b83b3b;
+            }
+            QPushButton:pressed {
+                background-color:#8f0000;
+                border-color:#8f0000;
+            }
+        """)
         
+        download_button = msg_box.addButton("Download", QMessageBox.ButtonRole.AcceptRole)
+        dismiss_button = msg_box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
         msg_box.setDefaultButton(download_button)
         msg_box.exec()
 
         if msg_box.clickedButton() == download_button:
-            webbrowser.open(f"https://github.com/hasderhi/annascript-studio/releases/latest")
+            webbrowser.open("https://github.com/hasderhi/annascript-studio/releases/latest")
             info("User chose to download update, opening browser and continuing with startup...")
 
     def setup_shortcuts(self):
@@ -2017,7 +2067,7 @@ class MainWindow(QMainWindow):
                 </ul>
 
                 <details>
-                    <summary>Show technical details</summary>
+                    <summary>Show details</summary>
                     <pre>{html.escape(safe_tb)}</pre>
                 </details>
             </div>
