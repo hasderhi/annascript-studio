@@ -2080,7 +2080,10 @@ class MainWindow(QMainWindow):
             </html>
             """
             self.preview.setHtml(error_html)
-            error(f"Failed to compile: {e}")
+            if "NoneType" in str(e):
+                error(f"Failed to compile: {e} (Likely caused by invalid macro syntax)")
+            else:
+                error(f"Failed to compile: {e}")
 
     def show_license(self):
         dlg = QDialog(self)
