@@ -142,7 +142,7 @@ if LATEST_VERSION:
         success(f"{CURRENT_VERSION} is the newest version")
         update_available = False
 
-if os.path.isfile(resource_path("annascript.png")) == False and os.path.isfile(resource_path("annascriptstudio.png")) == False:
+if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
     warning("Could not load icons, check if you are in src directory")
 
 
@@ -1498,7 +1498,7 @@ class MainWindow(QMainWindow):
         info("Notifying user...")
         msg_box = QMessageBox(self)
 
-        pixmap = QPixmap(resource_path("annascriptstudio.png"))
+        pixmap = QPixmap(resource_path("res/annascriptstudio.png"))
         if not pixmap.isNull():
             scaled_pixmap = pixmap.scaled(
                 64, 64, 
@@ -1507,7 +1507,7 @@ class MainWindow(QMainWindow):
             )
             msg_box.setIconPixmap(scaled_pixmap)
             
-        msg_box.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
+        msg_box.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
         msg_box.setWindowTitle("Update Available")
         msg_box.setText(f"A new version ({LATEST_VERSION}) is available!")
         msg_box.setInformativeText("Would you like to go to the download page?")
@@ -2149,9 +2149,9 @@ class MainWindow(QMainWindow):
         icon_row.setSpacing(16)
         
         icons_to_load = [
-            ("apbl.png", 161, 60),
-            ("annascriptstudio.png", 60, 60),
-            ("annascript.png", 60, 60)
+            ("res/apbl.png", 161, 60),
+            ("res/annascriptstudio.png", 60, 60),
+            ("res/annascript.png", 60, 60)
         ]
 
         for filename, width, height in icons_to_load:
@@ -2324,10 +2324,10 @@ class MainWindow(QMainWindow):
             return card
 
         studio_card = create_product_card(
-            "annascriptstudio.png", "annaScript Studio", f"{CURRENT_VERSION}", "Developed by Annabeth Kisling"
+            "res/annascriptstudio.png", "annaScript Studio", f"{CURRENT_VERSION}", "Developed by Annabeth Kisling"
         )
         language_card = create_product_card(
-            "annascript.png", "annaScript Core", f"{CURRENT_ANNASCRIPT_VERSION}", "Developed by Annabeth Kisling"
+            "res/annascript.png", "annaScript Core", f"{CURRENT_ANNASCRIPT_VERSION}", "Developed by Annabeth Kisling"
         )
 
         columns_layout.addWidget(studio_card)
@@ -2377,7 +2377,7 @@ class MainWindow(QMainWindow):
 # run entry
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(resource_path("annascriptstudio.png")))
+    app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
 
     app.setStyleSheet("""
     QMainWindow, QWidget {
