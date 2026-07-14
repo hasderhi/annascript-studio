@@ -2251,7 +2251,7 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
             }
             QLabel#Version {
-                color: #007ACC;
+                color: #b83b3b;
                 font-size: 12px;
                 font-weight: bold;
             }
