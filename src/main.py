@@ -65,7 +65,7 @@ CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 # change these if you've forked the repo
 REPO_OWNER = "hasderhi"
-REPO_NAME = "annascript-studio" 
+REPO_NAME = "annascript-studio"
 
 # needed to prevent the preview from opening web links internally
 WEB_DOMAIN_REGEX = re.compile(
