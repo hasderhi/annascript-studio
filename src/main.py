@@ -28,7 +28,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
-    QCursor, QAction, QGuiApplication, QDesktopServices
+    QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -207,6 +207,18 @@ class FindReplaceDialog(QDialog):
                 border-top: 1px solid #3E3E3E;
                 margin-top: 5px;
                 margin-bottom: 5px;
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: #b83b3b;
+                border-color: #8f0000;
+            }
+
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 1px solid #555555;
+                border-radius: 3px;
             }
         """)
 
@@ -802,7 +814,24 @@ class AScriptEditor(QPlainTextEdit):
 
     def __init__(self):
         super().__init__()
-        self.setFont(QFont("JetBrains Mono", 12))
+        
+        font_path = resource_path("fonts/JetBrainsMono.ttf")
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        
+        if font_id != -1:
+            font_families = QFontDatabase.applicationFontFamilies(font_id)
+            font_family = font_families[0] if font_families else "JetBrains Mono"
+        else:
+            font_family = "JetBrains Mono"
+
+        editor_font = QFont(font_family, 12)
+        
+        # qt magic to improve font rendering
+        editor_font.setStyleStrategy(QFont.StyleStrategy.PreferQuality)
+        editor_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+
+        self.setFont(editor_font)
+        
         self.setStyleSheet("""
             QPlainTextEdit {
                 background: #1e1e1e;
