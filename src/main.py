@@ -88,6 +88,8 @@ website()
 
 # sigh...
 if sys.platform == "linux":
+    os.environ["QT_QUICK_BACKEND"] = "software"
+    os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
     warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
