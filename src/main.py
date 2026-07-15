@@ -1427,7 +1427,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("annaScript Studio")
         self.resize(1400, 900)
-        self.setMinimumSize(1000, 300)
+        self.setMinimumSize(900, 300)
 
         self.current_file = None
         self.last_preview_path = None
