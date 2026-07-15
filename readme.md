@@ -9,6 +9,8 @@
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Addons-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Essentials-lightgrey)
 
+![Preview Image](preview_image.png)
+
 ## Introduction
 
 *annaScript* is a simple, easy-to-use markup language that compiles to HTML. It features a rich, simple syntax and an easily extendible macro system. Because *annaScript* uses a minimalistic approach to parse data, realtime compilation is possible without any noticable lag (Average Compile Time: < 30ms).
