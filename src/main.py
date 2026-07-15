@@ -23,12 +23,13 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 from PySide6.QtCore import (
-    Qt, QTimer, QUrl, QDir, QRegularExpression
+    Qt, QTimer, QUrl, QDir, QRegularExpression, QSize
 )
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
-    QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase
+    QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase,
+    QPainter
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -144,6 +145,80 @@ if LATEST_VERSION:
 
 if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
     warning("Could not load icons, check if you are in src directory")
+
+
+ICON_MAPPING = {
+    "Save": "save.png",
+    "Save as": "file-symlink.png",
+    "Open": "folder-open.png",
+    "New": "file-plus.png",
+    
+    "Undo": "undo-2.png",
+    "Redo": "redo-2.png",
+    "Find": "search.png",
+    "Find and Replace": "replace.png",
+    
+    "Cut": "scissors.png",
+    "Copy": "copy.png",
+    "Paste": "clipboard.png",
+    "Select All": "mouse-pointer-click.png",
+    
+    "Bold": "bold.png",
+    "Italic": "italic.png",
+    "Underline": "underline.png",
+    "Super": "superscript.png",
+    "Sub": "subscript.png",
+    "Center": "align-center.png",
+    "Bold and Italic": "type.png",
+    "Code": "code.png",
+    "Highlight": "highlighter.png",
+    "Comment": "message-square.png",
+    
+    "Box": "box.png",
+    "Box Warning": "alert-triangle.png",
+    "Box Danger": "alert-octagon.png",
+    "Box Info": "info.png",
+    "Note": "sticky-note.png",
+    "Table": "table.png",
+    "Pie Chart": "pie-chart.png",
+    "Bar Chart": "bar-chart.png",
+    "Root": "radical.png",
+    "Fraction": "divide.png",
+    "Definition": "book-open.png",
+    "Coordinates": "move-3d.png",
+    
+    "Export File": "file-down.png",
+    "Export File as PDF": "file-text.png",
+    "Print": "printer.png",
+    "Copy HTML": "file-code.png",
+
+    "Cleanup temporary directories": "trash-2.png",
+    "Open application directory": "folder-archive.png",
+    "Open temporary directory": "folder-clock.png",
+    "Open themes directory": "palette.png",
+
+    "Report a Bug": "bug.png",
+    "GitHub": "folder-git-2.png",
+    "About this Application": "circle-question-mark.png",
+    "License": "scale.png",
+    "Symbol Reference": "book-marked.png",
+    "Developer Website": "globe.png",
+    "Developer GitHub": "git-branch.png",
+    "Latest Release": "gift.png"
+}
+
+def get_white_icon(icon_path):
+    # easier than recoloring all icons
+    pixmap = QPixmap(icon_path)
+    if pixmap.isNull():
+        return QIcon()
+
+    painter = QPainter(pixmap)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    painter.fillRect(pixmap.rect(), QColor("#FFFFFF"))
+    painter.end()
+    
+    return QIcon(pixmap)
 
 
 # Find/Replace
@@ -369,7 +444,6 @@ class FindReplaceDialog(QDialog):
         cursor.endEditBlock()
 
 
-# Ribbon Menu
 class RibbonGroup(QWidget):
     def __init__(self, title, buttons, parent=None):
         super().__init__(parent)
@@ -389,9 +463,19 @@ class RibbonGroup(QWidget):
                 if text:
                     btn = QToolButton()
                     btn.setText(text)
-                    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+                    
+                    icon_name = ICON_MAPPING.get(text)
+                    if icon_name:
+                        icon_path = resource_path(f"res/icons/{icon_name}")
+                        white_icon = get_white_icon(icon_path)
+                        btn.setIcon(white_icon)
+                        btn.setIconSize(QSize(14, 14))
+                        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+                    else:
+                        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+
                     btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-                    btn.setMinimumWidth(75)
+                    btn.setMinimumWidth(90)
                     btn.setMinimumHeight(26)
 
                     grid.addWidget(btn, row, col)
@@ -420,6 +504,9 @@ class RibbonGroup(QWidget):
                 border: 1px solid #404040;
                 border-radius: 4px;
                 padding: 4px 8px;
+
+                qproperty-toolButtonStyle: ToolButtonTextBesideIcon; 
+                spacing: 6px; 
             }
             QToolButton:hover {
                 background-color: #3E3E42;
@@ -1370,7 +1457,7 @@ class MainWindow(QMainWindow):
             "super": lambda: self.apply_formatting("super"),
             "code": lambda: self.apply_formatting("code"),
             "center": lambda: self.apply_formatting("center"),
-            "comment": lambda: self.apply_formatting("underline"),
+            "comment": lambda: self.apply_formatting("comment"),
         }
         insert_ops = {
             "box": lambda: self.apply_formatting("box"),
