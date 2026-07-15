@@ -12,6 +12,7 @@ import sys
 import html
 import traceback
 import tempfile
+import shelve
 import os
 import re
 import webbrowser
@@ -219,6 +220,29 @@ def get_white_icon(icon_path):
     painter.end()
     
     return QIcon(pixmap)
+
+
+class AppStorage:
+    def __init__(self, filename="data/app_data.db"):
+        self.db_path = resource_path(filename)
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+        with shelve.open(self.db_path, writeback=True):
+            pass
+
+    def add_persistent_entry(self, key: str, value):
+        with shelve.open(self.db_path, writeback=True) as db:
+            db[key] = value
+
+    def get_persistent_entry(self, key: str, default=None):
+        with shelve.open(self.db_path, writeback=True) as db:
+            return db.get(key, default)
+
+    def rm_persistent_entry(self, key: str):
+        with shelve.open(self.db_path, writeback=True) as db:
+            if key in db:
+                del db[key]
 
 
 # Find/Replace
@@ -1536,6 +1560,19 @@ class MainWindow(QMainWindow):
 
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
+
+        storage = AppStorage()
+
+        # Future:
+        # storage.add_persistent_entry("test_entry", "test_value")
+
+        # my_entry_value = storage.get_persistent_entry("test_entry")
+        # print(my_entry_value)
+
+        # storage.rm_persistent_entry("test_entry")
+
+        # missing_value = storage.get_persistent_entry("test_entry") 
+        # print(missing_value)
 
         welcome_html = f"""
         <html>

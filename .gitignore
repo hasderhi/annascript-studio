@@ -2,4 +2,5 @@
 /build/
 /dev/
 /src/__pycache__/
+/src/data/app_data.db
 notice.txt
