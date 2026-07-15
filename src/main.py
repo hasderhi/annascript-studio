@@ -1204,6 +1204,12 @@ class SymbolReferenceDialog(QDialog):
                 border-color: #8f0000;
                 color: #FFFFFF;
             }
+            QTableView {
+                background-color: #252526;
+                border: none;
+                selection-background-color: #8f0000;
+                selection-color: #FFFFFF;
+            }
         """)
 
         layout = QVBoxLayout(self)
