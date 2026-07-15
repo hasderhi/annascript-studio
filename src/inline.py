@@ -79,6 +79,7 @@ def parse_inline(text: str) -> str:
         "-+": "∓",
         "<x>": "×",
         "<*>": "•",
+        r"\div": "÷",
 
         r"\infty": "∞",
         r"\propto": "∝",
@@ -92,6 +93,11 @@ def parse_inline(text: str) -> str:
         r"\cup": "∪",
         r"\cap": "∩",
         r"\emptyset": "∅",
+        r"\land": "∧",
+        r"\lor": "∨",
+        r"\ni": "∋",
+        r"\setminus": "∖",
+        r"\aleph": "ℵ",
         
         r"\sum": "∑",
         r"\prod": "∏",
@@ -118,10 +124,17 @@ def parse_inline(text: str) -> str:
         r"\because": "∵",
         r"\degree": "°",
 
+        r"\angle": "∠",
+        r"\perp": "⊥",
+        r"\parallel": "∥",
+        r"\tri": "△",
+
         r"\equilibrium": "⇌",
         r"\benzene": "⌬",
         r"\std": "⦵",
         r"\nuclear": "☢",
+        r"\hbar": "ℏ",
+        r"\ell": "ℓ",
     }
 
     GREEK = {
@@ -180,6 +193,12 @@ def parse_inline(text: str) -> str:
         r"\menu": "☰",
         r"\power": "⏻",
         r"\folder": "🗀",
+
+        r"\up": "↑",
+        r"\down": "↓",
+        r"\left": "←",
+        r"\right": "→",
+        r"\swap": "⇄",
     }
 
 
