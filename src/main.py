@@ -1249,6 +1249,8 @@ class SymbolReferenceDialog(QDialog):
     # update 19/04/2026 - I, in fact, did not replace it.
 
     # update 13/07/2026 - It's coming soon, I promise...
+
+    # update 15/07/2026 - Not yet...
     def math_symbols(self):
         return [
             ("<->", "↔", "Logical equivalence / bidirectional arrow"),
@@ -1263,6 +1265,7 @@ class SymbolReferenceDialog(QDialog):
             ("-+", "∓", "Minus-plus"),
             ("<x>", "×", "Multiplication (with cross)"),
             ("<*>", "•", "Multiplication (with dot)"),
+            (r"\div", "÷", "Division"),
 
             (r"\frac{x}{y}", "x / y", "Fraction"),
             (r"\bar{x}", "x", "Bar over x"),
@@ -1277,18 +1280,23 @@ class SymbolReferenceDialog(QDialog):
             (r"\forall", "∀", "For all"),
             (r"\exists", "∃", "There exists"),
             (r"\neg", "¬", "Logical NOT"),
+            (r"\land", "∧", "Logical AND"),
+            (r"\lor", "∨", "Logical OR"),
 
             (r"\in", "∈", "Element of"),
             (r"\notin", "∉", "Not element of"),
+            (r"\ni", "∋", "Contains as a member"),
             (r"\cup", "∪", "Union"),
             (r"\cap", "∩", "Intersection"),
             (r"\emptyset", "∅", "Empty set"),
+            (r"\setminus", "∖", "Set Minus"),
 
             (r"\sum", "∑", "Sum"),
             (r"\prod", "∏", "Product"),
             (r"\int", "∫", "Integral"),
             (r"\partial", "∂", "Partial derivative"),
             (r"\nabla", "∇", "Nabla / gradient"),
+            (r"\aleph", "ℵ", "Aleph"),
 
             (r"\N", "ℕ", "Natural numbers"),
             (r"\Z", "ℤ", "Integers"),
@@ -1309,10 +1317,17 @@ class SymbolReferenceDialog(QDialog):
             (r"\because", "∵", "Because"),
             (r"\degree", "°", "Degree"),
 
+            (r"\angle", "∠", "Angle"),
+            (r"\perp", "⊥", "Perpendicular"),
+            (r"\parallel", "∥", "Parallel"),
+            (r"\tri", "△", "Triangle"),
+
             (r"\equilibrium", "⇌", "Chemical equilibrium"),
             (r"\benzene", "⌬", "Benzene ring"),
             (r"\std", "⦵", "Standard state"),
             (r"\nuclear", "☢", "Radioactive / nuclear"),
+            (r"\hbar", "ℏ", "Plank constant"),
+            (r"\ell", "ℓ", "Script l"),
         ]
 
     def greek_lower(self):
@@ -1397,6 +1412,11 @@ class SymbolReferenceDialog(QDialog):
             (r"\menu", "☰", "Menu"),
             (r"\power", "⏻", "Power"),
             (r"\folder", "🗀", "Folder"),
+            (r"\up", "↑", "Arrow Up"),
+            (r"\down", "↓", "Arrow Down"),
+            (r"\left", "←", "Arrow Left"),
+            (r"\right", "→", "Arrow Right"),
+            (r"\swap", "⇄", "Arrow Swap")
         ]
 
 
