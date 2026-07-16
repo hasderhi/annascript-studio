@@ -245,6 +245,12 @@ class AppStorage:
             if key in db:
                 del db[key]
 
+    def is_first_open(self) -> bool:
+            first_open = self.get_persistent_entry('has_opened', default=None) is None
+            if first_open:
+                self.add_persistent_entry('has_opened', True)
+            return first_open
+
 
 # Find/Replace
 class FindReplaceDialog(QDialog):
@@ -1595,6 +1601,11 @@ class MainWindow(QMainWindow):
             self.show_update_dialog(LATEST_VERSION)
 
         storage = AppStorage()
+
+        if storage.is_first_open():
+            debug("First run")
+        else:
+            debug("Not first run")
 
         # Future:
         # storage.add_persistent_entry("test_entry", "test_value")
