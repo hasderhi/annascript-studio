@@ -74,6 +74,10 @@ def parse_inline(text: str) -> str:
         "!=": "≠",
         "~": "≈",
         "~~": "≈",
+
+        r"\cong": "≅",
+        r"\equiv": "≡",
+        r"\impliedby": "⇐",
         
         "+-": "±",
         "-+": "∓",
@@ -104,6 +108,14 @@ def parse_inline(text: str) -> str:
         r"\int": "∫",
         r"\partial": "∂",
         r"\nabla": "∇",
+
+        r"\cdot": "·",
+        r"\otimes": "⊗",
+        r"\oplus": "⊕",
+
+        r"\iint": "∬",
+        r"\iiint": "∭",
+        r"\oint": "∮",
 
         r"\N": "ℕ",
         r"\Z": "ℤ",
