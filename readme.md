@@ -92,7 +92,7 @@ Text formatting works by wrapping text in certain characters. Currently, *annaSc
 
 ==highlight==
 
-`code block`
+`code (single line)`
 
 ^^super^^
 
@@ -108,6 +108,17 @@ Links follow the same syntax as in *markdown* as well.
 ```annascript
 [Visit My Website](http://tk-dev-software.com)
 ```
+
+#### Code Blocks
+
+The syntax of code blocks is, again, similiar to markdown.
+
+````annascript
+```language
+name = input("What's your name? ")
+print(f"Hello, {name}!")
+```
+````
 
 #### Lists
 
