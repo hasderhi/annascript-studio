@@ -1,0 +1,142 @@
+@title: annaScript Studio User Guide
+@author: Annabeth Kisling
+@darkmode: true
+
+# annaScript Studio -- User Guide
+
+^^Last updated: July 16th 2026^^
+
+## Introduction
+
+### Thank you for using annaScript Studio!
+
+annaScript is a versatile, ergonomic markup language with many application -- whether you're writing a paper or jotting down quick notes. This user guide covers everything you need to unlock the language's full potential.
+
+If you have any questions, encounter issues, or have suggestions, please reach out via the `Help` menu.
+
+Best regards,
+
+*Annabeth Kisling*, *Lead Developer of annaScript*
+
+
+### New to Markup Languages?
+
+Markup languages use special symbols to turn plain text into formatted documents. For example, this source:
+
+```
+**Bold** text
+```
+
+may be translated to:
+
+::box
+**Bold** text
+::
+
+It works similarly to Microsoft Word, but without a graphical interface--you can write annaScript in any text editor.
+
+The only requirement is a compiler to convert your markup into formatted output. annaScript exports to HTML (and PDF), a universal format that any web browser can display. This eliminates dependency on proprietary formats like DOCX.
+
+While markup syntax may seem unfamiliar at first, you'll quickly find annaScript's design is intentionally simple and ergonomic. The main advantage: writing and formatting happen simultaneously, significantly boosting your efficiency.
+
+### Why annaScript?
+
+annaScript bridges the gap between Markdown and LaTeX. Markdown is simple and easy to use but lacks customization. LaTeX is powerful and customizable but has a steep learning curve.
+
+annaScript builds on Markdown's intuitive syntax while adding enhanced features, extensive customization through macros and themes, and a completely open-source, extensible architecture.
+
+Designed specifically for fast note-taking, annaScript ensures the language stays out of your way. The syntax is optimized to keep your hands on the keyboard, and annaScript Studio further streamlines workflows with ergonomic keybinds--both covered in detail later in this guide.
+
+## Quick Start
+
+### The Window
+
+When you open annaScript Studio, you'll see a window divided into three main sections:
+
+- The ribbon menu at the top
+- The editor panel on the left
+- The preview panel on the right
+
+On startup, the preview panel displays a welcome message. As you type in the editor, the preview updates automatically with the compiled output. 
+
+Note that the preview is read-only--all editing happens in the editor panel.
+
+You can resize either panel by clicking and dragging the border between them.
+
+
+### The ribbon menu
+
+At the top of the window, the ribbon menu offers a familiar interface reminiscent of Microsoft Office applications, designed to ease the transition for new users. 
+
+However, most actions can be performed much faster by typing the syntax directly or using keybinds.
+For example, instead of selecting text and clicking the Bold button, simply wrap your text in double asterisks:
+
+```
+**My bold sentence**
+```
+
+The ribbon menu is organized into these categories:
+
+- `Home` -- File operations and basic text formatting
+- `Insert` -- Insert special elements
+- `Export` -- Export and print options
+- `Advanced` -- Advanced application settings
+- `Help` -- Support, documentation, and license information
+
+### The editor panel
+
+On the left side of the window, you'll find the editor panel. Write your source code here, and the compiler will translate it into formatted output. The editor stays synchronized with the preview panel in real time.
+
+To help you navigate, the editor automatically highlights syntax elements.
+
+Right-click to access a context menu with basic editing and clipboard options.
+
+### The preview panel
+
+On the right side, the preview panel displays the compiled output, updating automatically as you edit. 
+
+It also scrolls to match your cursor position in the editor, essential for working with large documents.
+
+If compilation fails, the preview displays a `Compiler Error` message.
+
+## annaScript Syntax
+
+annaScript features a simple yet powerful syntax. Below, you'll find a complete reference for every syntax element currently available in annaScript.
+
+### Meta tags
+
+Meta tags must be placed at the absolute top of a document and provide context about certain document parameters to the compiler. They are optional.
+
+```
+@title: Your title
+@author: Your name
+@style: Your theme's name
+@darkmode: true/false
+```
+
+### Basic Formatting
+
+These are the basic elements used to style text inline.
+
+```
+*Italic*
+**Bold**
+***Bold and Italic***
+
+_Underline_
+==Highlight==
+
+^^Superscript^^
+,,Subscript,,
+
+`code (single line)`
+
+// Comment
+```
+
+### Macros and Multi-Line Elements
+
+Macros are what makes annaScript extensible. All macros are styled through themes
+```
+
+```
