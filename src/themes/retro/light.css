@@ -87,17 +87,26 @@ code {
     padding: 0.2em 0.4em;
     border-radius: 4px;
     font-family: Consolas, "Courier New", monospace;
+    font-size: 0.9em;
 }
 
-
-pre.code-block {
+pre {
     background: var(--code-bg);
     border: 1px solid var(--code-border);
     padding: 1rem;
     border-radius: 6px;
     overflow-x: auto;
+    margin: 1.5rem 0;
 }
 
+pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: 1em;
+    display: block;
+}
 
 ul, ol {
     margin: 1rem 0;
