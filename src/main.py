@@ -1789,6 +1789,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+H"), self, activated=lambda: self.apply_formatting("highlight"))
             QShortcut(QKeySequence("Ctrl+/"), self, activated=lambda: self.apply_formatting("comment"))
             QShortcut(QKeySequence("Ctrl+Shift+C"), self, activated=lambda: self.apply_formatting("code"))
+            QShortcut(QKeySequence("Ctrl+Shift+Alt+C"), self, activated=lambda: self.apply_formatting("code_multi"))
             QShortcut(QKeySequence("Ctrl+,"), self, activated=lambda: self.apply_formatting("sub"))
             QShortcut(QKeySequence("Ctrl+."), self, activated=lambda: self.apply_formatting("super"))
 
@@ -2107,6 +2108,7 @@ class MainWindow(QMainWindow):
             "highlight": ("==", "=="),
             "comment": ("// ", ""),
             "code": ("`", "`"),
+            "code_multi": ("```\n", "\n```"),
             "sub": (",,", ",,"),
             "super": ("^^", "^^"),
             "center": ("::center\n", "\n::"),
