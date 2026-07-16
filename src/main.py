@@ -794,7 +794,6 @@ class RibbonMenu(QWidget):
         return tab
     
 
-# Highlighter
 class AScriptHighlighter(QSyntaxHighlighter):
     def __init__(self, document):
         super().__init__(document)
@@ -881,7 +880,22 @@ class AScriptHighlighter(QSyntaxHighlighter):
         self.rules.append((re.compile(r"^\|.*\|$"), self.formats["table_value"]))
 
     def highlightBlock(self, text):
-        in_macro = (self.previousBlockState() == 1)
+        prev_state = self.previousBlockState()
+        in_macro = (prev_state == 1)
+        in_code = (prev_state == 2)
+
+        if text.strip().startswith("```"):
+            self.setFormat(0, len(text), self.formats["code"])
+            if in_code:
+                self.setCurrentBlockState(0)
+            else:
+                self.setCurrentBlockState(2)
+            return
+
+        if in_code:
+            self.setFormat(0, len(text), self.formats["code"])
+            self.setCurrentBlockState(2)
+            return
 
         if text.startswith("::") and not text.startswith(":::"):
             if text.strip() == "::":
@@ -906,12 +920,9 @@ class AScriptHighlighter(QSyntaxHighlighter):
         m = self.param_pattern.match(text)
         if m:
             key, colon, value = m.groups()
-
             self.setFormat(0, len(key), self.param_key_format)
-
             start = len(key) + len(colon)
             self.setFormat(start, len(value), self.param_value_format)
-
             return
 
         for pattern, fmt in self.rules:
