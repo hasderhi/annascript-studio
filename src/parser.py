@@ -29,12 +29,15 @@ def parse_code(tokens, i):
     start_line = tokens[i].lineno
     i += 1
     code_lines = []
-    while i < len(tokens) and tokens[i].type != "CODE_END" and tokens[i].type != "EOF":
+    
+    while i < len(tokens) and tokens[i].type == "CODE_LINE":
         val = tokens[i].value if tokens[i].value is not None else ""
         code_lines.append(val)
         i += 1
+        
     if i < len(tokens) and tokens[i].type == "CODE_END":
         i += 1
+        
     code = "\n".join(code_lines)
     node = CodeBlock(code=code, start_line=start_line, end_line=tokens[i-1].lineno if code_lines else start_line)
     node.__end_index__ = i
