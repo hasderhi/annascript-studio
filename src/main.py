@@ -18,6 +18,7 @@ import re
 import webbrowser
 import subprocess
 import requests
+import datetime
 from packaging.version import Version
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -1085,6 +1086,27 @@ class CustomWebEnginePage(QWebEnginePage):
                 return False
 
         return super().acceptNavigationRequest(url, _type, isMainFrame)
+
+
+# if chromium again decides to bail out, I'm prepared
+class StderrLogger:
+    def __init__(self, original):
+        self.original = original
+
+    def write(self, text):
+        if not text.strip():
+            return
+
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+        self.original.write(
+            f"[{timestamp}] Chromium: {text}"
+        )
+
+    def flush(self):
+        self.original.flush()
+
+sys.stderr = StderrLogger(sys.stderr)
 
 
 class FilterableTable(QTableWidget):
