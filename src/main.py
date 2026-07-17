@@ -2050,6 +2050,14 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"{base} – {name}")
 
     def open_settings(self):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Settings Window")
+        msg.setText("This window is only a placeholder.")
+        msg.setInformativeText("This window currently serves no purpose, your changes will not be saved.")
+        msg.addButton("Continue", QMessageBox.AcceptRole)
+        msg.exec()
+    
         dialog = SettingsDialog(SETTINGS, callback_target=self, parent=self)
         dialog.exec()
 
