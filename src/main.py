@@ -38,8 +38,10 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QTabBar, QStackedWidget, QToolButton, QSizePolicy,
     QLabel, QGridLayout, QSplitter, QFileDialog, QDialog, 
     QLineEdit, QPushButton, QMessageBox, QTabWidget, QTableWidget,
-    QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea
+    QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea,
+    QFormLayout, QLabel, QSpinBox, QComboBox
 )
+
 from compiler_api import (
     render_to_tempfile, 
     cleanup_instance_directory,
@@ -84,6 +86,17 @@ LOCAL_ASSET_EXTENSIONS = {
     '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
     '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
     '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
+}
+
+SETTINGS = {
+    "General": {
+        "author-name": (None, "Default author name", "text", None, ""),
+        "start-with-darkmode-as-default": (None, "Start documents in darkmode", "checkbox", None, True),
+        "default-theme": (None, "Default Theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default")
+    },
+    "View": {
+        "font-size": (None, "Editor Font Size", "spinbox", [1, 200], 14),
+    }
 }
 
 
@@ -250,6 +263,188 @@ class AppStorage:
             if first_open:
                 self.add_persistent_entry('has_opened', True)
             return first_open
+
+
+class SettingsDialog(QDialog):
+    def __init__(self, categories_config, callback_target=None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        self.resize(500, 400)
+        self.setStyleSheet("""
+            QDialog, QWidget {
+                background-color: #2B2B2B;
+                color: #E0E0E0;
+            }
+            QTabWidget::panel {
+                border: 1px solid #3E3E3E;
+                background-color: #2B2B2B;
+                top: -1px;
+            }
+            QTabBar::tab {
+                background-color: #1E1E1E;
+                color: #A0A0A0;
+                padding: 8px 16px;
+                border: 1px solid #3E3E3E;
+                border-bottom-color: transparent;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background-color: #2B2B2B;
+                color: #FFFFFF;
+                border-bottom-color: #2B2B2B;
+            }
+            QTabBar::tab:hover {
+                background-color: #333333;
+            }
+            QLabel {
+                font-size: 13px;
+                color: #E0E0E0;
+            }
+            QLineEdit, QSpinBox, QComboBox {
+                background-color: #1E1E1E;
+                color: #FFFFFF;
+                padding: 5px;
+                border: 1px solid #444444;
+                border-radius: 4px;
+            }
+            QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
+                border: 1px solid #8f0000;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                background: #3C3C3C;
+                width: 16px;
+            }
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 15px;
+                border-left: 1px solid #444444;
+            }
+            QCheckBox {
+                color: #E0E0E0;
+                font-size: 12px;
+                spacing: 6px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                background-color: #1E1E1E;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #b83b3b;
+                border-color: #8f0000;
+            }
+            QPushButton {
+                background-color: #3C3C3C;
+                color: white;
+                padding: 6px 14px;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #4E4E4E;
+                border-color: #666666;
+            }
+            QPushButton:pressed {
+                background-color: #b83b3b;
+                border-color: #8f0000;
+            }
+        """)
+        
+        self.callback_target = callback_target
+        self.widgets = {}
+        
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(12, 12, 12, 12)
+        
+        self.tab_widget = QTabWidget()
+        self.main_layout.addWidget(self.tab_widget)
+        
+        for category_name, settings_dict in categories_config.items():
+            tab_page = QWidget()
+            tab_layout = QFormLayout(tab_page)
+            tab_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+            tab_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            
+            self._build_fields(settings_dict, tab_layout)
+            self.tab_widget.addTab(tab_page, category_name)
+        
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        separator.setStyleSheet("border-top: 1px solid #3E3E3E; margin: 5px 0;")
+        self.main_layout.addWidget(separator)
+        
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        
+        self.cancel_btn = QPushButton("Cancel")
+        self.save_btn = QPushButton("Save")
+        
+        self.cancel_btn.clicked.connect(self.reject)
+        self.save_btn.clicked.connect(self.handle_save)
+        
+        btn_layout.addWidget(self.cancel_btn)
+        btn_layout.addWidget(self.save_btn)
+        self.main_layout.addLayout(btn_layout)
+
+    def _build_fields(self, settings_dict, layout):
+        for element_id, info in settings_dict.items():
+            connector, label_name, widget_type, options, default_value = info
+            
+            if widget_type == "spinbox":
+                widget = QSpinBox()
+                if options and len(options) == 2:
+                    widget.setRange(options[0], options[1])
+                widget.setValue(default_value)
+                if connector: widget.valueChanged.connect(connector)
+                    
+            elif widget_type == "checkbox":
+                widget = QCheckBox()
+                widget.setChecked(default_value)
+                if connector: widget.toggled.connect(connector)
+                    
+            elif widget_type == "dropdown":
+                widget = QComboBox()
+                if isinstance(options, list): widget.addItems(options)
+                widget.setCurrentText(str(default_value))
+                if connector: widget.currentTextChanged.connect(connector)
+                    
+            elif widget_type == "text":
+                widget = QLineEdit()
+                widget.setText(str(default_value))
+                if connector: widget.textChanged.connect(connector)
+            else:
+                continue
+
+            self.widgets[element_id] = widget
+            layout.addRow(QLabel(label_name), widget)
+
+    def get_values(self):
+        results = {}
+        for element_id, widget in self.widgets.items():
+            if isinstance(widget, QSpinBox): results[element_id] = widget.value()
+            elif isinstance(widget, QCheckBox): results[element_id] = widget.isChecked()
+            elif isinstance(widget, QComboBox): results[element_id] = widget.currentText()
+            elif isinstance(widget, QLineEdit): results[element_id] = widget.text()
+        return results
+
+    def handle_save(self):
+        settings_data = self.get_values()
+        
+        if self.callback_target and hasattr(self.callback_target, "apply_settings"):
+            self.callback_target.apply_settings(settings_data)
+        else:
+            # if this happens something went very wrong...
+            error("SettingsDialog: Missing runtime target connection, printing dataset...")
+            debug(settings_data)
+            
+        self.accept()
 
 
 # Find/Replace
@@ -1810,6 +2005,8 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+E"), self, activated=self.export_file)
             QShortcut(QKeySequence("Ctrl+Shift+E"), self, activated=self.export_file_to_pdf)
 
+            QShortcut(QKeySequence("Ctrl+Alt+Space"), self, activated=self.open_settings)
+
     def insert_text(self, text):
         cursor = self.editor.textCursor()
         cursor.insertText(text)
@@ -1850,6 +2047,13 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"{base} – {name} *")
         else:
             self.setWindowTitle(f"{base} – {name}")
+
+    def open_settings(self):
+        dialog = SettingsDialog(SETTINGS, callback_target=self, parent=self)
+        dialog.exec()
+
+    def apply_settings(self, settings_dict):
+        success(f"Received clean settings data in Main App: {settings_dict}")
 
     def maybe_save(self) -> bool:
             if not self.document_modified:
