@@ -160,7 +160,7 @@ if getattr(sys, "frozen", False):
     pass
 else:
     # Normal Python
-    if not execute_path().endswith("src"):
+    if not execute_path().endswith("src"): # Not good
         warning("Not running from src, aborting...")
         error("The Python application can only run from the src directory! Type 'cd src' and try again!")
         sys.exit(1)
