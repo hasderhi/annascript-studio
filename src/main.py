@@ -2005,6 +2005,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+E"), self, activated=self.export_file)
             QShortcut(QKeySequence("Ctrl+Shift+E"), self, activated=self.export_file_to_pdf)
 
+            # temp, no one should accidentally hit this
             QShortcut(QKeySequence("Ctrl+Alt+Space"), self, activated=self.open_settings)
 
     def insert_text(self, text):
