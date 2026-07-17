@@ -162,7 +162,7 @@ else:
     # Normal Python
     if not execute_path().endswith("src"):
         warning("Not running from src, aborting...")
-        error("The Python application can only run from the src directory! Type cd src and try again!")
+        error("The Python application can only run from the src directory! Type 'cd src' and try again!")
         sys.exit(1)
 
 update_available = False
