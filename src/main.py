@@ -121,6 +121,13 @@ def resource_path(relative_path: str) -> str:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+def execute_path() -> str:
+    if hasattr(sys, "_MEIPASS"):
+        path = sys._MEIPASS
+    else:
+        path = os.path.abspath(".")
+    return os.path.join(path)
+
 def open_file_or_dir(path):
     if sys.platform == "win32":
         os.startfile(path)
@@ -145,6 +152,18 @@ def get_latest_version(repo_owner, repo_name):
     except:
         warning("Could not determine latest release, skipping...")
         return None
+
+info(f"Executing from: {execute_path()}")
+
+if getattr(sys, "frozen", False):
+    # Executable = do nothing
+    pass
+else:
+    # Normal Python
+    if not execute_path().endswith("src"):
+        warning("Not running from src, aborting...")
+        error("The Python application can only run from the src directory! Type cd src and try again!")
+        sys.exit(1)
 
 update_available = False
 
