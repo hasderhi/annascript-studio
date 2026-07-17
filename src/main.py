@@ -2050,6 +2050,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"{base} – {name}")
 
     def open_settings(self):
+        # testing in production, what could go wrong...
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("Settings Window")
