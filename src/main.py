@@ -138,7 +138,7 @@ def open_file_or_dir(path):
 
 def get_latest_version(repo_owner, repo_name):
     headers = {
-        "User-Agent": "Annascript-Studio-Updater"
+        "User-Agent": "annaScript-Studio-Updater"
     }
     try:
         if not DO_NOT_CHECK_FOR_UPDATES:
