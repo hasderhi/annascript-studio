@@ -381,6 +381,19 @@ def render(node: Node, cursor_line=None) -> str:
     if isinstance(node, Macro):
         fn = _macro_registry.get(node.name, render_macro_generic)
         return marker_for(node, cursor_line) + fn(node)
+
+    if isinstance(node, Marker):
+        escaped_name = html.escape(node.name)
+        escaped_color = html.escape(node.color.lower())
+
+        icon = "✕" if escaped_color == "fail" else "✓"
+
+        return marker_for(node, cursor_line) + (
+            f'<span class="marker marker-{escaped_color}">'
+            f'<span class="marker-icon">{icon}</span> '
+            f'{escaped_name}'
+            f'</span><br>'
+        )
     
     if isinstance(node, ToDo):
         checked_attr = "checked" if node.checked else ""

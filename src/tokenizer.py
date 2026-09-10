@@ -78,6 +78,10 @@ def tokenize(text: str):
             tokens.append(Token("TABLE_ROW", stripped, lineno=idx, indent=indent))
             continue
 
+        if re.match(r'^\s*\[![a-zA-Z0-9_-]+\]\s+\S', line):
+            tokens.append(Token("MARKER", line.rstrip(), lineno=idx, indent=indent))
+            continue
+
         if re.match(r'^\s*\[\s*[xX]?\s*\]\s+\S', line):
             tokens.append(Token("TODO", line.rstrip(), lineno=idx, indent=indent))
             continue

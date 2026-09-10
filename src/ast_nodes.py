@@ -36,6 +36,13 @@ class ToDo(Node):
     checked: bool = False
 
 @dataclass
+class Marker(Node):
+    name: str = ""
+    color: str = "blue"
+    start_line: int
+    end_line: int
+
+@dataclass
 class ListItem(Node):
     text: str = ""
     children: List[Node] = field(default_factory=list)

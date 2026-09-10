@@ -185,6 +185,23 @@ def parse(tokens):
             i = node.__end_index__
             continue
 
+        if tok.type == "MARKER":
+            raw = tok.value.strip()
+            match = re.match(r'^\[!([a-zA-Z0-9_-]+)\]\s*(.*)', raw)
+            if match:
+                color = match.group(1)
+                name = match.group(2)
+                node = Marker(
+                    name=name,
+                    color=color,
+                    start_line=tok.lineno,
+                    end_line=tok.lineno
+                )
+                node.__end_index__ = i + 1
+                children.append(node)
+            i += 1
+            continue
+
         if tok.type == "TODO":
             raw = tok.value.strip()
             checked = bool(re.match(r'^\[\s*[xX]\s*\]', raw))

@@ -91,8 +91,9 @@ LOCAL_ASSET_EXTENSIONS = {
 SETTINGS = {
     "General": {
         "author-name": (None, "Default author name", "text", None, ""),
+        "default-theme": (None, "Default Theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default"),
         "start-with-darkmode-as-default": (None, "Start documents in darkmode", "checkbox", None, True),
-        "default-theme": (None, "Default Theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default")
+        "default-path": (None, "Default file path", "text", None, ""),
     },
     "View": {
         "font-size": (None, "Editor Font Size", "spinbox", [1, 200], 14),
