@@ -145,23 +145,23 @@ td {
 }
 
 .marker-red {
-    color: #a51000;
+    color: #e31700;
 }
 
 .marker-green {
-    color: #007230;
+    color: #39b620;
 }
 
 .marker-yellow {
-    color: #d27400;
+    color: #ffbf00;
 }
 
 .marker-blue {
-    color: #003b63;
+    color: #0084dd;
 }
 
 .marker-fail {
-    color: #a51000;
+    color: #e31700;
 }
 
 .todo-checkbox {
