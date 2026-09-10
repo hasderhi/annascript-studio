@@ -2008,6 +2008,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+O"), self, activated=self.open_file)
             QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_file)
             QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.save_file_as)
+            QShortcut(QKeySequence("Ctrl+P"), self, activated=self.print_document)
 
             QShortcut(QKeySequence("Ctrl+U"), self, activated=lambda: self.apply_formatting("underline"))
             QShortcut(QKeySequence("Ctrl+B"), self, activated=lambda: self.apply_formatting("bold"))
