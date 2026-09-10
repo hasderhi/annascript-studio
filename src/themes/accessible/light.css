@@ -164,6 +164,38 @@ td {
     border: 1px solid var(--table-border);
 }
 
+.marker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-weight: 500;
+    color: var(--accent); /* fallback */
+}
+
+.marker-icon {
+    font-weight: bold;
+}
+
+.marker-red {
+    color: #a51000;
+}
+
+.marker-green {
+    color: #007230;
+}
+
+.marker-yellow {
+    color: #d27400;
+}
+
+.marker-blue {
+    color: #003b63;
+}
+
+.marker-fail {
+    color: #a51000;
+}
+
 .todo-checkbox {
     pointer-events: none;
     vertical-align: middle;
