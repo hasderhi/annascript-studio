@@ -151,6 +151,21 @@ ToDo lists in *annaScript* follow the usual syntax in most markup languages (the
 [   ] unchecked
 ```
 
+#### Markers
+
+Markers are colored text inserts accompanied by either a checkmark (✓) or a cross (✕). They can be inserted using the following syntax:
+
+```annascript
+[!green] This is green.
+[!yellow] This is yellow.
+[!red] This is red.
+[!blue] This is blue.
+[!example] If the specified color is not supported by your theme, its default accent color will be used.
+[!fail] This is red with a cross.
+```
+
+If the specified color is not supported by your theme, its default accent color will be used.
+
 #### Macros
 
 Macros are the highlight of *annaScript* and are the easiest to add your own elements to your document. All macros follow the same syntax rules:
