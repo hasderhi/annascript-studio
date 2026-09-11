@@ -1862,7 +1862,7 @@ class MainWindow(QMainWindow):
         <body>
 
         <div class="welcome-card">
-            <h2>Welcome to annaScript Studio!</h2>
+            <h2>Welcome to annaScript Studio {CURRENT_VERSION}!</h2>
             <div class="subtitle">Begin typing in the editor or open a file to dismiss this screen.</div>
             
             <p>
