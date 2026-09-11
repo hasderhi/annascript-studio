@@ -937,14 +937,16 @@ class RibbonMenu(QWidget):
         layout.setSpacing(10)
 
         advanced_group = RibbonGroup("Advanced", [
-            ["Cleanup temporary directories", "Open application directory"],
-            ["Open temporary directory", "Open themes directory"]
+            ["Cleanup temporary directories", "Open application directory", "Settings"],
+            ["Open temporary directory", "Open themes directory", "Show welcome page"]
         ])
 
         advanced_group.buttons["Cleanup temporary directories"].clicked.connect(self.debug_ops["cleanup_tempdir"])
         advanced_group.buttons["Open temporary directory"].clicked.connect(self.debug_ops["open_tempdir"])
         advanced_group.buttons["Open application directory"].clicked.connect(self.debug_ops["open_basedir"])
         advanced_group.buttons["Open themes directory"].clicked.connect(self.debug_ops["open_themesdir"])
+        advanced_group.buttons["Settings"].clicked.connect(self.debug_ops["open_settings"])
+        advanced_group.buttons["Show welcome page"].clicked.connect(self.debug_ops["trigger_welcome"])
 
         layout.addWidget(advanced_group)
         layout.addStretch()
@@ -1309,6 +1311,8 @@ class StderrLogger:
     def flush(self):
         self.original.flush()
 
+sys.stderr = StderrLogger(sys.stderr)
+
 
 class FilterableTable(QTableWidget):
     def __init__(self, rows):
@@ -1498,6 +1502,9 @@ class SymbolReferenceDialog(QDialog):
     # update 13/07/2026 - It's coming soon, I promise...
 
     # update 15/07/2026 - Not yet...
+
+    # update 11/09/2026 - I'm sure I will replace it soon...
+
     def math_symbols(self):
         return [
             ("<->", "↔", "Logical equivalence / bidirectional arrow"),
@@ -1672,8 +1679,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        sys.stderr = StderrLogger(sys.stderr)
-
         self.setWindowTitle("annaScript Studio")
         self.resize(1400, 900)
         self.setMinimumSize(900, 300)
@@ -1759,6 +1764,8 @@ class MainWindow(QMainWindow):
             "open_tempdir": self.open_tempdir,
             "open_themesdir": self.open_themesdir,
             "open_basedir": self.open_basedir,
+            "open_settings": self.open_settings,
+            "trigger_welcome": self.trigger_welcome,
         }
         help_ops = {
             "show_about": self.show_about,
@@ -1786,6 +1793,10 @@ class MainWindow(QMainWindow):
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
 
+        self.trigger_welcome()
+
+
+    def trigger_welcome(self):
         welcome_html = f"""
         <html>
         <head>
@@ -1884,6 +1895,7 @@ class MainWindow(QMainWindow):
         </html>
         """
         self.preview.setHtml(welcome_html)
+
 
     def show_update_dialog(self, LATEST_VERSION):
         info("Notifying user...")
