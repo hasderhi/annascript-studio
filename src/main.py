@@ -65,7 +65,7 @@ from logger import (
 # Constants
 DO_NOT_CHECK_FOR_UPDATES = False
 
-CURRENT_VERSION = "v1.2.4"
+CURRENT_VERSION = "v1.2.5"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.1"
 
 # change these if you've forked the repo
