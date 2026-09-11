@@ -12,7 +12,6 @@ import sys
 import html
 import traceback
 import tempfile
-import shelve
 import os
 import re
 import webbrowser
@@ -255,35 +254,6 @@ def get_white_icon(icon_path):
     painter.end()
     
     return QIcon(pixmap)
-
-
-class AppStorage:
-    def __init__(self, filename="data/app_data.db"):
-        self.db_path = resource_path(filename)
-        db_dir = os.path.dirname(self.db_path)
-        if db_dir:
-            os.makedirs(db_dir, exist_ok=True)
-        with shelve.open(self.db_path, writeback=True):
-            pass
-
-    def add_persistent_entry(self, key: str, value):
-        with shelve.open(self.db_path, writeback=True) as db:
-            db[key] = value
-
-    def get_persistent_entry(self, key: str, default=None):
-        with shelve.open(self.db_path, writeback=True) as db:
-            return db.get(key, default)
-
-    def rm_persistent_entry(self, key: str):
-        with shelve.open(self.db_path, writeback=True) as db:
-            if key in db:
-                del db[key]
-
-    def is_first_open(self) -> bool:
-            first_open = self.get_persistent_entry('has_opened', default=None) is None
-            if first_open:
-                self.add_persistent_entry('has_opened', True)
-            return first_open
 
 
 class SettingsDialog(QDialog):
@@ -1815,13 +1785,6 @@ class MainWindow(QMainWindow):
 
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
-
-        storage = AppStorage()
-
-        if storage.is_first_open():
-            debug("First run")
-        else:
-            debug("Not first run")
 
         # Future:
         # storage.add_persistent_entry("test_entry", "test_value")
