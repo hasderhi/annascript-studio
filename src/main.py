@@ -231,6 +231,8 @@ ICON_MAPPING = {
     "Open application directory": "folder-archive.png",
     "Open temporary directory": "folder-clock.png",
     "Open themes directory": "palette.png",
+    "Settings": "settings.png",
+    "Show welcome page": "smile.png",
 
     "Report a Bug": "bug.png",
     "GitHub": "folder-git-2.png",
