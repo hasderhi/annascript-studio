@@ -1786,17 +1786,6 @@ class MainWindow(QMainWindow):
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
 
-        # Future:
-        # storage.add_persistent_entry("test_entry", "test_value")
-
-        # my_entry_value = storage.get_persistent_entry("test_entry")
-        # print(my_entry_value)
-
-        # storage.rm_persistent_entry("test_entry")
-
-        # missing_value = storage.get_persistent_entry("test_entry") 
-        # print(missing_value)
-
         welcome_html = f"""
         <html>
         <head>
