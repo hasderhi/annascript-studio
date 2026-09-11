@@ -1309,8 +1309,6 @@ class StderrLogger:
     def flush(self):
         self.original.flush()
 
-sys.stderr = StderrLogger(sys.stderr)
-
 
 class FilterableTable(QTableWidget):
     def __init__(self, rows):
@@ -1673,6 +1671,8 @@ class SymbolReferenceDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        sys.stderr = StderrLogger(sys.stderr)
 
         self.setWindowTitle("annaScript Studio")
         self.resize(1400, 900)
