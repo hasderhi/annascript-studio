@@ -8,6 +8,9 @@
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Addons-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Essentials-lightgrey)
+![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Essentials-lightgrey)
+![Dependencies](https://img.shields.io/badge/Dependencies-requests-lightgrey)
+![Dependencies](https://img.shields.io/badge/Dependencies-packaging-lightgrey)
 
 ![Preview Image](preview_image.png)
 
