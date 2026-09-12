@@ -112,6 +112,10 @@ Links follow the same syntax as in *markdown* as well.
 #### Code Blocks
 
 The syntax of code blocks is, again, similiar to markdown.
+Keyword highlighting is supported for Python, C, C++, C#,
+JavaScript and Java. For other languages, basic syntax highlighting
+is enabled. If keyword highlighting is desired, the language must be
+specified (see example below).
 
 ````annascript
 ```language
@@ -119,6 +123,9 @@ name = input("What's your name? ")
 print(f"Hello, {name}!")
 ```
 ````
+
+**When printing or exporting your document to PDF, make sure your code does not
+exceed the available page width. Code that extends beyond the page may be truncated or hidden.**
 
 #### Lists
 
