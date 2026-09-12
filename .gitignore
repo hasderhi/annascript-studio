@@ -3,6 +3,4 @@
 /dev/
 /.venv/
 /src/__pycache__/
-/src/data/*
-/src/data/app_data.db
 notice.txt
