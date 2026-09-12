@@ -136,7 +136,6 @@ td {
     border: 1px solid var(--table-border);
 }
 
-
 .code-block,
 .code-inline {
     background: #f6f7f8;
@@ -193,7 +192,6 @@ td {
 .highlight-punctuation {
     color: #5a5f68;
 }
-
 
 .marker {
     display: inline-flex;
