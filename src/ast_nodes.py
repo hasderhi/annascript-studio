@@ -23,6 +23,8 @@ class Paragraph(Node):
 @dataclass
 class CodeBlock(Node):
     code: str = ""
+    lang: str | None = None
+    inline: bool = False
 
 @dataclass
 class Macro(Node):
@@ -39,8 +41,6 @@ class ToDo(Node):
 class Marker(Node):
     name: str = ""
     color: str = "blue"
-    start_line: int
-    end_line: int
 
 @dataclass
 class ListItem(Node):

@@ -1,6 +1,7 @@
 from ast_nodes import *
 from inline import parse_inline
 from evaluator import safe_eval, normalize_expr
+from highlighter import highlight_code
 import html
 from typing import Callable
 import re
@@ -349,7 +350,13 @@ def render(node: Node, cursor_line=None) -> str:
         return marker_for(node, cursor_line) + f"<p>{parse_inline(txt)}</p>"
 
     if isinstance(node, CodeBlock):
-        return marker_for(node, cursor_line) + f"<pre><code>{html.escape(node.code)}</code></pre>"
+        highlighted = highlight_code(node.code, node.lang)
+        lang_class = f" language-{html.escape(node.lang)}" if node.lang else ""
+        if node.inline:
+            return marker_for(node, cursor_line) + (
+                f'<pre class="code-inline{lang_class}"><code>{highlighted}</code></pre>'
+            )
+        return marker_for(node, cursor_line) + f'<pre class="code-block{lang_class}"><code>{highlighted}</code></pre>'
 
     if isinstance(node, ListItem):
         inner = parse_inline(node.text)

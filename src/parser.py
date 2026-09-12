@@ -27,20 +27,32 @@ def parse_paragraph(tokens, i):
 
 def parse_code(tokens, i):
     start_line = tokens[i].lineno
+    lang = tokens[i].value.strip() if tokens[i].value else None
+    lang = lang or None
     i += 1
     code_lines = []
-    
+
     while i < len(tokens) and tokens[i].type == "CODE_LINE":
         val = tokens[i].value if tokens[i].value is not None else ""
         code_lines.append(val)
         i += 1
-        
+
     if i < len(tokens) and tokens[i].type == "CODE_END":
         i += 1
-        
+
     code = "\n".join(code_lines)
-    node = CodeBlock(code=code, start_line=start_line, end_line=tokens[i-1].lineno if code_lines else start_line)
+    node = CodeBlock(code=code, lang=lang, start_line=start_line, end_line=tokens[i-1].lineno if code_lines else start_line)
     node.__end_index__ = i
+    return node
+
+
+def parse_inline_code_block(tokens, i):
+    tok = tokens[i]
+    start_line = tok.lineno
+    raw = tok.value.strip()
+    content = raw[1:-1]
+    node = CodeBlock(code=content, lang=None, inline=True, start_line=start_line, end_line=start_line)
+    node.__end_index__ = i + 1
     return node
 
 def parse_macro(tokens, i):
@@ -158,6 +170,12 @@ def parse(tokens):
 
         if tok.type == "CODE_START":
             node = parse_code(tokens, i)
+            children.append(node)
+            i = node.__end_index__
+            continue
+
+        if tok.type == "INLINE_CODE_BLOCK":
+            node = parse_inline_code_block(tokens, i)
             children.append(node)
             i = node.__end_index__
             continue

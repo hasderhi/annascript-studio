@@ -21,7 +21,7 @@ def _count_indent(s: str) -> int:
 def tokenize(text: str):
     lines = text.splitlines()
     tokens: list[Token] = []
-    
+
     in_code_block = False
 
     for idx, raw_line in enumerate(lines, start=1):
@@ -31,7 +31,8 @@ def tokenize(text: str):
 
         if stripped.startswith("```"):
             if not in_code_block:
-                tokens.append(Token("CODE_START", stripped, lineno=idx, indent=indent))
+                lang = stripped[3:].strip()
+                tokens.append(Token("CODE_START", lang, lineno=idx, indent=indent))
                 in_code_block = True
             else:
                 tokens.append(Token("CODE_END", stripped, lineno=idx, indent=indent))
@@ -84,6 +85,10 @@ def tokenize(text: str):
 
         if re.match(r'^\s*\[\s*[xX]?\s*\]\s+\S', line):
             tokens.append(Token("TODO", line.rstrip(), lineno=idx, indent=indent))
+            continue
+
+        if re.match(r'^`[^`]+`$', stripped):
+            tokens.append(Token("INLINE_CODE_BLOCK", stripped, lineno=idx, indent=indent))
             continue
 
         tokens.append(Token("TEXT", line.rstrip(), lineno=idx, indent=indent))

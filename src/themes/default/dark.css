@@ -132,6 +132,65 @@ td {
     border: 1px solid var(--table-border);
 }
 
+.code-block,
+.code-inline {
+    background: #21252b;
+    border: 1px solid #33383f;
+    border-radius: 6px;
+    color: #d3d6db;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+.code-block {
+    padding: 0.9em 1em;
+    margin: 0.75em 0;
+}
+
+.code-inline {
+    padding: 0.15em 0.5em;
+    margin: 0.4em 0;
+    display: inline-block;
+}
+
+.code-block code,
+.code-inline code {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+}
+
+
+.highlight-keyword {
+    color: #b09cf0;
+}
+
+.highlight-string {
+    color: #9bc789;
+}
+
+.highlight-number {
+    color: #d3a06c;
+}
+
+.highlight-comment {
+    color: #7a808a;
+    font-style: italic;
+}
+
+.highlight-operator {
+    color: #7fb0d0;
+}
+
+.highlight-punctuation {
+    color: #9096a0;
+}
+
+
 .marker {
     display: inline-flex;
     align-items: center;

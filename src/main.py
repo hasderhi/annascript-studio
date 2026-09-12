@@ -8,12 +8,12 @@ To change certain application functions, please check the constants below the im
 
 
 # Imports
+import os
 import sys
+import re
 import html
 import traceback
 import tempfile
-import os
-import re
 import webbrowser
 import subprocess
 import requests
