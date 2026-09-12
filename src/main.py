@@ -2179,10 +2179,18 @@ class MainWindow(QMainWindow):
     def export_file(self):
         text = self.editor.toPlainText()
 
+        if self.current_file:
+            default_filename = f"{self.current_file.removesuffix(".ascr")}.html"
+        else:
+            try:
+                default_filename = os.path.join(DEFAULT_PATH, f"{self.get_document_parameter(text, 'title')}.html") 
+            except:
+                default_filename = os.path.join(DEFAULT_PATH, "untitled.html") 
+
         outfile, _ = QFileDialog.getSaveFileName(
             self,
             "Export HTML",
-            f"{DEFAULT_PATH}/output.html",
+            default_filename,
             "HTML Files (*.html)"
         )
 
@@ -2192,10 +2200,18 @@ class MainWindow(QMainWindow):
     def export_file_to_pdf(self):
         text = self.editor.toPlainText()
 
+        if self.current_file:
+            default_filename = f"{self.current_file.removesuffix(".ascr")}.pdf"
+        else:
+            try:
+                default_filename = os.path.join(DEFAULT_PATH, f"{self.get_document_parameter(text, 'title')}.pdf") 
+            except:
+                default_filename = os.path.join(DEFAULT_PATH, "untitled.pdf") 
+
         pdf_path, _ = QFileDialog.getSaveFileName(
             self,
             "Export PDF",
-            f"{DEFAULT_PATH}/output.pdf",
+            default_filename,
             "PDF Files (*.pdf)"
         )
 
