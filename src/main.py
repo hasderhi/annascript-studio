@@ -208,9 +208,11 @@ ICON_MAPPING = {
     "Sub": "subscript.png",
     "Center": "align-center.png",
     "Bold and Italic": "type.png",
-    "Code": "code.png",
+    "Marker": "flag.png",
     "Highlight": "highlighter.png",
     "Comment": "message-square.png",
+    "Code": "code.png",
+    "Code Block": "code.png",
     
     "Box": "box.png",
     "Box Warning": "alert-triangle.png",
@@ -844,8 +846,8 @@ class RibbonMenu(QWidget):
             ["Paste", "Select All"]
         ])
         font_group = RibbonGroup("Font", [
-            ["Bold", "Italic", "Underline", "Super", "Center"],
-            ["Bold and Italic", "Code", "Highlight", "Sub", "Comment"],
+            ["Bold", "Italic", "Underline", "Super", "Center", "Code"],
+            ["Bold and Italic", "Marker", "Highlight", "Sub", "Comment", "Code Block"],
         ])
 
         file_group.buttons["Save"].clicked.connect(self.file_ops["save"])
@@ -866,13 +868,15 @@ class RibbonMenu(QWidget):
         font_group.buttons["Bold"].clicked.connect(self.font_ops["bold"])
         font_group.buttons["Bold and Italic"].clicked.connect(self.font_ops["bold_italic"])
         font_group.buttons["Italic"].clicked.connect(self.font_ops["italic"])
-        font_group.buttons["Code"].clicked.connect(self.font_ops["code"])
+        font_group.buttons["Marker"].clicked.connect(self.font_ops["marker"])
         font_group.buttons["Comment"].clicked.connect(self.font_ops["comment"])
         font_group.buttons["Sub"].clicked.connect(self.font_ops["sub"])
         font_group.buttons["Super"].clicked.connect(self.font_ops["super"])
         font_group.buttons["Highlight"].clicked.connect(self.font_ops["highlight"])
         font_group.buttons["Underline"].clicked.connect(self.font_ops["underline"])
         font_group.buttons["Center"].clicked.connect(self.font_ops["center"])
+        font_group.buttons["Code"].clicked.connect(self.font_ops["code"])
+        font_group.buttons["Code Block"].clicked.connect(self.font_ops["code_block"])
 
         layout.addWidget(file_group)
         layout.addWidget(edit_group)
@@ -1740,9 +1744,11 @@ class MainWindow(QMainWindow):
             "highlight": lambda: self.apply_formatting("highlight"),
             "sub": lambda: self.apply_formatting("sub"),
             "super": lambda: self.apply_formatting("super"),
-            "code": lambda: self.apply_formatting("code"),
+            "marker": lambda: self.apply_formatting("marker"),
             "center": lambda: self.apply_formatting("center"),
             "comment": lambda: self.apply_formatting("comment"),
+            "code": lambda: self.apply_formatting("code"),
+            "code_block": lambda: self.apply_formatting("code_block")
         }
         insert_ops = {
             "box": lambda: self.apply_formatting("box"),
@@ -2339,11 +2345,13 @@ class MainWindow(QMainWindow):
             "bold_italic": ("***", "***"),
             "highlight": ("==", "=="),
             "comment": ("// ", ""),
-            "code": ("`", "`"),
+            "marker": ("[!blue] ", ""),
             "code_multi": ("```\n", "\n```"),
             "sub": (",,", ",,"),
             "super": ("^^", "^^"),
             "center": ("::center\n", "\n::"),
+            "code": ("`", "`"),
+            "code_block": ("```language\n", "\n```"),
             
             "box": ("::box\n", "\n::"),
             "box_danger": ("::box type=danger\n", "\n::"),
