@@ -23,7 +23,7 @@ THEMES_SRC = os.path.join(BASE_DIR, "themes")
 
 ROOT_TEMP = os.path.join(tempfile.gettempdir(), "ascriptstudio", INSTANCE_ID)
 
-THEMES_DST = os.path.join(ROOT_TEMP, "themes")                                                 
+THEMES_DST = os.path.join(ROOT_TEMP, "themes")
 
 def _ensure_temp_environment():
     os.makedirs(ROOT_TEMP, exist_ok=True)
