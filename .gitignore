@@ -1,6 +1,7 @@
 /project/
 /build/
 /dev/
+/src/res/settings/*
 /.venv/
 /src/__pycache__/
 notice.txt

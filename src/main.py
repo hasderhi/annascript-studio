@@ -12,6 +12,7 @@ import os
 import sys
 import re
 import html
+import json
 import traceback
 import tempfile
 import webbrowser
@@ -19,6 +20,8 @@ import subprocess
 import requests
 import datetime
 from packaging.version import Version
+from pathlib import Path
+from typing import Any
 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
@@ -104,6 +107,72 @@ SETTINGS = {
 }
 
 
+ICON_MAPPING = {
+    "Save": "save.png",
+    "Save as": "file-symlink.png",
+    "Open": "folder-open.png",
+    "New": "file-plus.png",
+    
+    "Undo": "undo-2.png",
+    "Redo": "redo-2.png",
+    "Find": "search.png",
+    "Find and Replace": "replace.png",
+    
+    "Cut": "scissors.png",
+    "Copy": "copy.png",
+    "Paste": "clipboard.png",
+    "Select All": "mouse-pointer-click.png",
+    
+    "Bold": "bold.png",
+    "Italic": "italic.png",
+    "Underline": "underline.png",
+    "Super": "superscript.png",
+    "Sub": "subscript.png",
+    "Center": "align-center.png",
+    "Bold and Italic": "type.png",
+    "Marker": "flag.png",
+    "Highlight": "highlighter.png",
+    "Comment": "message-square.png",
+    "Code": "code.png",
+    "Code Block": "code.png",
+    
+    "Box": "box.png",
+    "Box Warning": "alert-triangle.png",
+    "Box Danger": "alert-octagon.png",
+    "Box Info": "info.png",
+    "Note": "sticky-note.png",
+    "Table": "table.png",
+    "Pie Chart": "pie-chart.png",
+    "Bar Chart": "bar-chart.png",
+    "Root": "radical.png",
+    "Fraction": "divide.png",
+    "Definition": "book-open.png",
+    "Coordinates": "move-3d.png",
+    
+    "Export File": "file-down.png",
+    "Export File as PDF": "file-text.png",
+    "Print": "printer.png",
+    "Copy HTML": "file-code.png",
+
+    "Cleanup temporary directories": "trash-2.png",
+    "Open application directory": "folder-archive.png",
+    "Open temporary directory": "folder-clock.png",
+    "Open themes directory": "palette.png",
+    "Settings": "settings.png",
+    "Show welcome page": "smile.png",
+
+    "Report a Bug": "bug.png",
+    "GitHub": "folder-git-2.png",
+    "About this Application": "circle-question-mark.png",
+    "License": "scale.png",
+    "Symbol Reference": "book-marked.png",
+    "Developer Website": "globe.png",
+    "Developer GitHub": "git-branch.png",
+    "Latest Release": "gift.png"
+}
+
+DEFAULT_PATH = f"{QDir.homePath()}/Documents"
+
 # Startup and helpers
 title(CURRENT_VERSION)
 website()
@@ -114,7 +183,7 @@ if sys.platform == "linux":
     os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
     warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
 
-DEFAULT_PATH = f"{QDir.homePath()}/Documents"
+
 
 info(f"Default path set to {DEFAULT_PATH}")
 
@@ -184,71 +253,6 @@ if LATEST_VERSION:
 
 if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
     warning("Could not load icons, check if you are in src directory")
-
-
-ICON_MAPPING = {
-    "Save": "save.png",
-    "Save as": "file-symlink.png",
-    "Open": "folder-open.png",
-    "New": "file-plus.png",
-    
-    "Undo": "undo-2.png",
-    "Redo": "redo-2.png",
-    "Find": "search.png",
-    "Find and Replace": "replace.png",
-    
-    "Cut": "scissors.png",
-    "Copy": "copy.png",
-    "Paste": "clipboard.png",
-    "Select All": "mouse-pointer-click.png",
-    
-    "Bold": "bold.png",
-    "Italic": "italic.png",
-    "Underline": "underline.png",
-    "Super": "superscript.png",
-    "Sub": "subscript.png",
-    "Center": "align-center.png",
-    "Bold and Italic": "type.png",
-    "Marker": "flag.png",
-    "Highlight": "highlighter.png",
-    "Comment": "message-square.png",
-    "Code": "code.png",
-    "Code Block": "code.png",
-    
-    "Box": "box.png",
-    "Box Warning": "alert-triangle.png",
-    "Box Danger": "alert-octagon.png",
-    "Box Info": "info.png",
-    "Note": "sticky-note.png",
-    "Table": "table.png",
-    "Pie Chart": "pie-chart.png",
-    "Bar Chart": "bar-chart.png",
-    "Root": "radical.png",
-    "Fraction": "divide.png",
-    "Definition": "book-open.png",
-    "Coordinates": "move-3d.png",
-    
-    "Export File": "file-down.png",
-    "Export File as PDF": "file-text.png",
-    "Print": "printer.png",
-    "Copy HTML": "file-code.png",
-
-    "Cleanup temporary directories": "trash-2.png",
-    "Open application directory": "folder-archive.png",
-    "Open temporary directory": "folder-clock.png",
-    "Open themes directory": "palette.png",
-    "Settings": "settings.png",
-    "Show welcome page": "smile.png",
-
-    "Report a Bug": "bug.png",
-    "GitHub": "folder-git-2.png",
-    "About this Application": "circle-question-mark.png",
-    "License": "scale.png",
-    "Symbol Reference": "book-marked.png",
-    "Developer Website": "globe.png",
-    "Developer GitHub": "git-branch.png",
-    "Latest Release": "gift.png"
-}
 
 def get_white_icon(icon_path):
     # easier than recoloring all icons
@@ -444,6 +448,56 @@ class SettingsDialog(QDialog):
             debug(settings_data)
             
         self.accept()
+
+    def save_settings(settings: dict[str, Any]) -> None:
+        settings_path = Path(resource_path("res/settings/settings.json"))
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = settings_path.with_suffix(".json.tmp")
+        
+        try:
+            info(f"Attempting to save settings to {temporary_path}")
+            with temporary_path.open("w", encoding="utf-8") as file:
+                json.dump(settings, file, indent=4, ensure_ascii=False)
+                file.write("\n")
+            temporary_path.replace(settings_path)
+            success(f"Settings successfully saved to {settings_path}")
+        except (OSError, TypeError, ValueError) as exc:
+            error(f"Failed to save settings to {settings_path}: {exc}")
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError as cleanup_exc:
+                warning(f"Failed to remove temporary file {temporary_path}: {cleanup_exc}")
+
+    def load_settings() -> dict[str, Any]:
+        settings_path = Path(resource_path("res/settings/settings.json"))
+        if not settings_path.is_file():
+            info(f"No settings file found at {settings_path}. Returning default empty settings.")
+            return {}
+            
+        try:
+            info(f"Loading settings from {settings_path}")
+            with settings_path.open("r", encoding="utf-8") as file:
+                settings = json.load(file)
+                
+            if not isinstance(settings, dict):
+                error(f"Settings file must contain a JSON object, but got {type(settings).__name__}: {settings_path}")
+                return {}
+                
+            success(f"Settings successfully loaded from {settings_path}")
+            return settings
+            
+        except json.JSONDecodeError as exc:
+            error(f"Invalid JSON in settings file {settings_path}: {exc}")
+            return {}
+        except OSError as exc:
+            error(f"Failed to read settings file {settings_path}: {exc}")
+            return {}
+
+    # settings = load_settings()
+
+    # author_name = settings.get("author-name", "")
+    # font_size = settings.get("font-size", 14)
+
 
 
 # Find/Replace
@@ -2061,7 +2115,8 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def apply_settings(self, settings_dict):
-        success(f"Received clean settings data in Main App: {settings_dict}")
+        SettingsDialog.save_settings(settings_dict)
+        debug(f"Received clean settings data in Main App: {settings_dict}")
 
     def maybe_save(self) -> bool:
             if not self.document_modified:
