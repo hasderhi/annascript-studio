@@ -135,7 +135,9 @@ ICON_MAPPING = {
     "Comment": "message-square.png",
     "Code": "code.png",
     "Code Block": "code.png",
-    
+
+    "Title": "type.png",
+    "Heading": "heading.png",
     "Box": "box.png",
     "Box Warning": "alert-triangle.png",
     "Box Danger": "alert-octagon.png",
@@ -949,10 +951,12 @@ class RibbonMenu(QWidget):
         layout.setSpacing(10)
 
         insert_group = RibbonGroup("Insert", [
-            ["Box", "Box Warning", "Note", "Table", "Pie Chart", "Root"],
-            ["Box Danger", "Box Info", "Definition", "Coordinates", "Bar Chart", "Fraction"],
+            ["Title", "Box", "Box Warning", "Note", "Table", "Pie Chart", "Root"],
+            ["Heading", "Box Danger", "Box Info", "Definition", "Coordinates", "Bar Chart", "Fraction"],
         ])
 
+        insert_group.buttons["Title"].clicked.connect(self.insert_ops["title"])
+        insert_group.buttons["Heading"].clicked.connect(self.insert_ops["heading"])
         insert_group.buttons["Box"].clicked.connect(self.insert_ops["box"])
         insert_group.buttons["Box Danger"].clicked.connect(self.insert_ops["box_danger"])
         insert_group.buttons["Box Warning"].clicked.connect(self.insert_ops["box_warning"])
@@ -1806,6 +1810,8 @@ class MainWindow(QMainWindow):
             "code_block": lambda: self.apply_formatting("code_block")
         }
         insert_ops = {
+            "title": lambda: self.apply_formatting("title"),
+            "heading": lambda: self.apply_formatting("heading"),
             "box": lambda: self.apply_formatting("box"),
             "box_danger": lambda: self.apply_formatting("box_danger"),
             "box_warning": lambda: self.apply_formatting("box_warning"),
@@ -2408,7 +2414,9 @@ class MainWindow(QMainWindow):
             "center": ("::center\n", "\n::"),
             "code": ("`", "`"),
             "code_block": ("```language\n", "\n```"),
-            
+
+            "title": ("::title\n", "\n::"),
+            "heading": ("#", ""),
             "box": ("::box\n", "\n::"),
             "box_danger": ("::box type=danger\n", "\n::"),
             "box_warning": ("::box type=warning\n", "\n::"),
