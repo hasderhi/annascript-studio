@@ -212,6 +212,10 @@ def parse_inline(text: str) -> str:
         r"\right": "→",
         r"\swap": "⇄",
     }
+    STRUCTURE = {
+        r"\br": "<br>",
+        r"\hr": "<hr>"
+    }
 
 
     
@@ -234,6 +238,9 @@ def parse_inline(text: str) -> str:
 
     for placeholder, html_code in code_spans.items():
         text = text.replace(placeholder, html_code)
+
+    for k, v in STRUCTURE.items():
+        text = text.replace(k, v)
 
     text = re.sub(r'\*\*\*(.+?)\*\*\*',
                   lambda m: f"<strong><em>{_inline_parse(m.group(1))}</em></strong>",

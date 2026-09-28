@@ -1549,10 +1549,11 @@ class SymbolReferenceDialog(QDialog):
         layout.addWidget(self.tabs)
 
         self.tables = []
-        self._add_tab("Math & Logic", self.math_symbols())
+        self._add_tab("General", self.general_symbols())
+        self._add_tab("Page Structure", self.page_structure())
+        self._add_tab("Math and Logic", self.math_symbols()) # the weird dot glitch bug finally has been found - somehow QDialog can't render the "&" here...
         self._add_tab("Greek (lowercase)", self.greek_lower())
         self._add_tab("Greek (uppercase)", self.greek_upper())
-        self._add_tab("General", self.general_symbols())
 
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
@@ -1577,6 +1578,8 @@ class SymbolReferenceDialog(QDialog):
     # update 15/07/2026 - Not yet...
 
     # update 11/09/2026 - I'm sure I will replace it soon...
+
+    # update 28/09/2026 - It's getting repetitive...
 
     def math_symbols(self):
         return [
@@ -1658,56 +1661,60 @@ class SymbolReferenceDialog(QDialog):
         ]
 
     def greek_lower(self):
-        return [(r"\alpha", "α", "Greek letter alpha"),
-                (r"\beta", "β", "Greek letter beta"),
-                (r"\gamma", "γ", "Greek letter gamma"),
-                (r"\delta", "δ", "Greek letter delta"),
-                (r"\epsilon", "ε", "Greek letter epsilon"),
-                (r"\zeta", "ζ", "Greek letter zeta"),
-                (r"\eta", "η", "Greek letter eta"),
-                (r"\theta", "θ", "Greek letter theta"),
-                (r"\iota", "ι", "Greek letter iota"),
-                (r"\kappa", "κ", "Greek letter kappa"),
-                (r"\lambda", "λ", "Greek letter lambda"),
-                (r"\mu", "μ", "Greek letter mu"),
-                (r"\nu", "ν", "Greek letter nu"),
-                (r"\xi", "ξ", "Greek letter xi"),
-                (r"\omicron", "ο", "Greek letter omicron"),
-                (r"\pi", "π", "Greek letter pi"),
-                (r"\rho", "ρ", "Greek letter rho"),
-                (r"\sigma", "σ", "Greek letter sigma"),
-                (r"\tau", "τ", "Greek letter tau"),
-                (r"\upsilon", "υ", "Greek letter upsilon"),
-                (r"\phi", "φ", "Greek letter phi"),
-                (r"\chi", "χ", "Greek letter chi"),
-                (r"\psi", "ψ", "Greek letter psi"),
-                (r"\omega", "ω", "Greek letter omega")]
+        return [
+            (r"\alpha", "α", "Greek letter alpha"),
+            (r"\beta", "β", "Greek letter beta"),
+            (r"\gamma", "γ", "Greek letter gamma"),
+            (r"\delta", "δ", "Greek letter delta"),
+            (r"\epsilon", "ε", "Greek letter epsilon"),
+            (r"\zeta", "ζ", "Greek letter zeta"),
+            (r"\eta", "η", "Greek letter eta"),
+            (r"\theta", "θ", "Greek letter theta"),
+            (r"\iota", "ι", "Greek letter iota"),
+            (r"\kappa", "κ", "Greek letter kappa"),
+            (r"\lambda", "λ", "Greek letter lambda"),
+            (r"\mu", "μ", "Greek letter mu"),
+            (r"\nu", "ν", "Greek letter nu"),
+            (r"\xi", "ξ", "Greek letter xi"),
+            (r"\omicron", "ο", "Greek letter omicron"),
+            (r"\pi", "π", "Greek letter pi"),
+            (r"\rho", "ρ", "Greek letter rho"),
+            (r"\sigma", "σ", "Greek letter sigma"),
+            (r"\tau", "τ", "Greek letter tau"),
+            (r"\upsilon", "υ", "Greek letter upsilon"),
+            (r"\phi", "φ", "Greek letter phi"),
+            (r"\chi", "χ", "Greek letter chi"),
+            (r"\psi", "ψ", "Greek letter psi"),
+            (r"\omega", "ω", "Greek letter omega")
+        ]
 
     def greek_upper(self):
-        return [(r"\Alpha", "Α", "Greek capital alpha"),
-                (r"\Beta", "Β", "Greek capital beta"),
-                (r"\Gamma", "Γ", "Greek capital gamma"),
-                (r"\Delta", "Δ", "Greek capital delta"),
-                (r"\Epsilon", "Ε", "Greek capital epsilon"),
-                (r"\Zeta", "Ζ", "Greek capital zeta"),
-                (r"\Eta", "Η", "Greek capital eta"),
-                (r"\Theta", "Θ", "Greek capital theta"),
-                (r"\Iota", "Ι", "Greek capital iota"),
-                (r"\Kappa", "Κ", "Greek capital kappa"),
-                (r"\Lambda", "Λ", "Greek capital lambda"),
-                (r"\Mu", "Μ", "Greek capital mu"),
-                (r"\Nu", "Ν", "Greek capital nu"),
-                (r"\Xi", "Ξ", "Greek capital xi"),
-                (r"\Omicron", "Ο", "Greek capital omicron"),
-                (r"\Pi", "Π", "Greek capital pi"),
-                (r"\Rho", "Ρ", "Greek capital rho"),
-                (r"\Sigma", "Σ", "Greek capital sigma"),
-                (r"\Tau", "Τ", "Greek capital tau"),
-                (r"\Upsilon", "Υ", "Greek capital upsilon"),
-                (r"\Phi", "Φ", "Greek capital phi"),
-                (r"\Chi", "Χ", "Greek capital chi"),
-                (r"\Psi", "Ψ", "Greek capital psi"),
-                (r"\Omega", "Ω", "Greek capital omega")]
+        return [
+            (r"\Alpha", "Α", "Greek capital alpha"),
+            (r"\Beta", "Β", "Greek capital beta"),
+            (r"\Gamma", "Γ", "Greek capital gamma"),
+            (r"\Delta", "Δ", "Greek capital delta"),
+            (r"\Epsilon", "Ε", "Greek capital epsilon"),
+            (r"\Zeta", "Ζ", "Greek capital zeta"),
+            (r"\Eta", "Η", "Greek capital eta"),
+            (r"\Theta", "Θ", "Greek capital theta"),
+            (r"\Iota", "Ι", "Greek capital iota"),
+            (r"\Kappa", "Κ", "Greek capital kappa"),
+            (r"\Lambda", "Λ", "Greek capital lambda"),
+            (r"\Mu", "Μ", "Greek capital mu"),
+            (r"\Nu", "Ν", "Greek capital nu"),
+            (r"\Xi", "Ξ", "Greek capital xi"),
+            (r"\Omicron", "Ο", "Greek capital omicron"),
+            (r"\Pi", "Π", "Greek capital pi"),
+            (r"\Rho", "Ρ", "Greek capital rho"),
+            (r"\Sigma", "Σ", "Greek capital sigma"),
+            (r"\Tau", "Τ", "Greek capital tau"),
+            (r"\Upsilon", "Υ", "Greek capital upsilon"),
+            (r"\Phi", "Φ", "Greek capital phi"),
+            (r"\Chi", "Χ", "Greek capital chi"),
+            (r"\Psi", "Ψ", "Greek capital psi"),
+            (r"\Omega", "Ω", "Greek capital omega")
+        ]
 
     def general_symbols(self):
         return [
@@ -1744,6 +1751,12 @@ class SymbolReferenceDialog(QDialog):
             (r"\left", "←", "Arrow Left"),
             (r"\right", "→", "Arrow Right"),
             (r"\swap", "⇄", "Arrow Swap")
+        ]
+
+    def page_structure(self):
+        return [
+            (r"\br", "⏎", "Line Break"),
+            (r"\hr", "——", "Horizontal rule (Separator)")
         ]
 
 
