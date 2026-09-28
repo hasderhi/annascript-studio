@@ -1,6 +1,7 @@
 /project/
 /build/
 /dev/
+/docs/
 /src/res/settings/*
 /.venv/
 /src/__pycache__/

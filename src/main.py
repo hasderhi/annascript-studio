@@ -98,11 +98,16 @@ SETTINGS = {
         "default-path": (None, "Default file path", "text", None, ""),
         "start-with-darkmode-as-default": (None, "Start documents in dark mode", "checkbox", None, False),
     },
+    "Rendering": {
+        "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
+        "enable-dynamic": (None, "Enable dynamic rendering (BETA)", "checkbox", None, False)
+    },
     "View": {
         "font-size": (None, "Editor font size", "spinbox", [1, 200], 14),
     },
     "Advanced": {
         "update-check": (None, "Check for updates", "checkbox", None, True),
+        "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
     }
 }
 
@@ -2045,6 +2050,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_file)
             QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.save_file_as)
             QShortcut(QKeySequence("Ctrl+P"), self, activated=self.print_document)
+            QShortcut(QKeySequence("Ctrl+R"), self, activated=self.update_preview)
 
             QShortcut(QKeySequence("Ctrl+U"), self, activated=lambda: self.apply_formatting("underline"))
             QShortcut(QKeySequence("Ctrl+B"), self, activated=lambda: self.apply_formatting("bold"))
