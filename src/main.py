@@ -1551,7 +1551,7 @@ class SymbolReferenceDialog(QDialog):
         self.tables = []
         self._add_tab("General", self.general_symbols())
         self._add_tab("Page Structure", self.page_structure())
-        self._add_tab("Math and Logic", self.math_symbols()) # the weird dot glitch bug finally has been found - somehow QDialog can't render the "&" here...
+        self._add_tab("Math && Logic", self.math_symbols()) # nvm, it was a implementation error on my side, Qt uses ampersands as shortcut directives...
         self._add_tab("Greek (lowercase)", self.greek_lower())
         self._add_tab("Greek (uppercase)", self.greek_upper())
 
