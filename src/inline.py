@@ -214,7 +214,8 @@ def parse_inline(text: str) -> str:
     }
     STRUCTURE = {
         r"\br": "<br>",
-        r"\hr": "<hr>"
+        r"\hr": "<hr>",
+        r"\pb": "<div class='page-break'><hr></div>",
     }
 
 

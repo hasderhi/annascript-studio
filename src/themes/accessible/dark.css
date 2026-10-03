@@ -501,3 +501,25 @@ td {
 .coord-label { fill: #ffffff; }
 
 .figure-label { fill: #ffffff; }
+
+
+/* page structure and media */
+.page-break {
+  color: var(--accent-soft);
+  background-color: var(--accent-soft);
+  height: 4px;
+  margin-top: 50px;
+  margin-bottom: 25px;
+}
+
+@media print {
+  p, h1, h2, h3, h4, h5, h6, li, blockquote, figure, .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .page-break { 
+    break-after: page;
+    visibility: hidden;
+  }
+}

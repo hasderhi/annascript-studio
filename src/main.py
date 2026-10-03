@@ -27,13 +27,13 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 from PySide6.QtCore import (
-    Qt, QTimer, QUrl, QDir, QRegularExpression, QSize
+    Qt, QTimer, QUrl, QDir, QRegularExpression, QSize, QMarginsF
 )
 from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
     QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase,
-    QPainter
+    QPainter, QPageLayout, QPageSize
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -2313,78 +2313,101 @@ class MainWindow(QMainWindow):
         self.convert_to_pdf(tmp.name, pdf_path)
 
     def convert_to_pdf(self, html_path: str, pdf_path: str):
-        page = QWebEnginePage()
+        self._pdf_page = QWebEnginePage()
+        page = self._pdf_page
 
-        def handle_load_finished(ok):
+        layout = QPageLayout(
+            QPageSize(QPageSize.PageSizeId.A4),
+            QPageLayout.Orientation.Portrait,
+            QMarginsF(20, 20, 20, 20),
+            QPageLayout.Unit.Millimeter,
+        )
+
+        def on_pdf_finished(file_path, ok):
+            if ok:
+                success(f"PDF exported successfully -> {file_path}")
+            else:
+                error("PDF export failed.")
+            try:
+                os.remove(html_path)
+            except OSError:
+                pass
+            page.deleteLater()
+            self._pdf_page = None
+
+        def on_load_finished(ok):
             if not ok:
                 error("Failed to load HTML for PDF export.")
                 return
+            page.pdfPrintingFinished.connect(on_pdf_finished)
+            page.printToPdf(pdf_path, layout)
 
-            def finished(_):
-                success(f"PDF exported successfully -> {pdf_path}")
-                try:
-                    os.remove(html_path) # cleanup temp file
-                except OSError:
-                    pass
-
-            page.pdfPrintingFinished.connect(finished)
-            page.printToPdf(pdf_path)
-
-        url = QUrl.fromLocalFile(os.path.abspath(html_path))
-        page.loadFinished.connect(handle_load_finished)
-        page.load(url)
+        page.loadFinished.connect(on_load_finished)
+        page.load(QUrl.fromLocalFile(os.path.abspath(html_path)))
 
     def print_document(self):
         try:
             info("Initiating printing dialog...")
-
             try:
                 editor_text = self.editor.toPlainText()
                 darkmode_value = self.get_document_parameter(editor_text, "darkmode")
-                if darkmode_value == "1" or darkmode_value == "true" or darkmode_value == "yes":
+                if str(darkmode_value).strip().lower() in ("1", "true", "yes"):
                     # if this is the case, the user probably doesn't want to continue - printer ink is expensive!
-
                     warning("Dark mode has been detected! Asking user before proceeding...")
                     msg = QMessageBox(self)
-                    msg.setIcon(QMessageBox.Warning)
+                    msg.setIcon(QMessageBox.Icon.Warning)
                     msg.setWindowTitle("Dark Mode is enabled.")
                     msg.setText("Dark Mode is enabled.")
                     msg.setInformativeText("Do you want to print this document?")
                     msg.setStandardButtons(
-                        QMessageBox.Yes |
-                        QMessageBox.No
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                     )
-                    msg.setDefaultButton(QMessageBox.No)
-                    result = msg.exec()
-                    if result == QMessageBox.No:
+                    msg.setDefaultButton(QMessageBox.StandardButton.No)
+                    if msg.exec() != QMessageBox.StandardButton.Yes:
                         warning("Aborting...")
                         return
-                    if result == QMessageBox.Yes:
-                        warning("Printing anyway...")
-                        pass
+                    warning("Printing anyway...")
             except KeyError:
                 pass
-
             html = build_standalone_html(self.editor.toPlainText())
-            printer = QPrinter(QPrinter.HighResolution)
+
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            printer.setPageLayout(QPageLayout(
+                QPageSize(QPageSize.PageSizeId.A4),
+                QPageLayout.Orientation.Portrait,
+                QMarginsF(20, 20, 20, 20),
+                QPageLayout.Unit.Millimeter,
+            ))
+
             dialog = QPrintDialog(printer, self)
             dialog.setWindowTitle("Print Document")
-
-            if dialog.exec() != QPrintDialog.Accepted:
+            if dialog.exec() != QPrintDialog.DialogCode.Accepted:
                 return
 
-            self.print_view = QWebEngineView() # must persist
+            view = QWebEngineView()
+            self.print_view = view # must persist
 
-            def handle_load_finished(ok):
+            def on_print_finished(ok):
+                if ok:
+                    success("Document sent to printer.")
+                else:
+                    error("Printing failed.")
+                view.deleteLater()
+                if self.print_view is view:
+                    self.print_view = None
+
+            def on_load_finished(ok):
                 if not ok:
                     error("Failed to render document for printing.")
+                    view.deleteLater()
+                    self.print_view = None
                     return
+                view.printFinished.connect(on_print_finished)
+                view.print(printer)
 
-                self.print_view.print(printer)
-                success("Document sent to printer.")
+            view.loadFinished.connect(on_load_finished)
+            view.setHtml(html)
 
-            self.print_view.loadFinished.connect(handle_load_finished)
-            self.print_view.setHtml(html)
         except Exception as e:
             error(f"Failed to print document: {e}")
 
