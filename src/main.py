@@ -1745,6 +1745,7 @@ class SymbolReferenceDialog(QDialog):
             (r"\star", "★", "Star"),
             (r"\menu", "☰", "Menu"),
             (r"\power", "⏻", "Power"),
+            (r"\doc", "🗎", "Document"),
             (r"\folder", "🗀", "Folder"),
             (r"\up", "↑", "Arrow Up"),
             (r"\down", "↓", "Arrow Down"),
@@ -1756,7 +1757,8 @@ class SymbolReferenceDialog(QDialog):
     def page_structure(self):
         return [
             (r"\br", "⏎", "Line Break"),
-            (r"\hr", "——", "Horizontal rule (Separator)")
+            (r"\hr", "——", "Horizontal rule (Separator)"),
+            (r"\pg", "⏎ 🗎", "Page Break")
         ]
 
 

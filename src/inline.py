@@ -205,6 +205,7 @@ def parse_inline(text: str) -> str:
         r"\menu": "☰",
         r"\power": "⏻",
         r"\folder": "🗀",
+        r"\doc": "🗎",
 
         r"\up": "↑",
         r"\down": "↓",
