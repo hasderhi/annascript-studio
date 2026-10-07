@@ -60,7 +60,16 @@ Below are all current meta tags available:
 @author: Annabeth Kisling
 @style: default
 @darkmode: true
+@pagenum: bottom-right-arabic-fractional
 ```
+
+About `pagenum`: This meta tag enables you to insert page numbering in different styles to your document. It accepts the following arguments:
+
+`@pagenum: top/bottom-right/left-arabic/roman_lower/roman_upper-numeric/labeled/fractional`
+
+For example, if you want uppercase roman numbering in the top left corner, you'd use:
+
+`@pagenum: top-left-roman_upper-numeric`
 
 #### Headings
 
