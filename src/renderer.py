@@ -432,6 +432,66 @@ def render_macro_generic(node: Macro) -> str:
     inner = parse_inline(node.content)
     return f'<div class="{html.escape(node.name)}">{inner}</div>'
 
+def generate_page_number_css(meta):
+    raw_pagenum = str(meta.get("pagenum", "")).strip()
+
+    if not raw_pagenum:
+        return ""
+
+    parts = raw_pagenum.split("-")
+
+    if len(parts) != 4:
+        return ""
+
+    vertical, horizontal, numbering, format_type = parts
+
+    if vertical not in ("top", "bottom"):
+        return ""
+
+    if horizontal not in ("left", "right"):
+        return ""
+
+    margin_box = f"@{vertical}-{horizontal}"
+
+    counter_styles = {
+        "arabic": "decimal",
+        "roman_upper": "upper-roman",
+        "roman_lower": "lower-roman",
+    }
+
+    counter_style = counter_styles.get(numbering)
+
+    if counter_style is None:
+        return ""
+
+    if format_type not in ("numeric", "labeled", "fractional"):
+        return ""
+
+    page_counter = f"counter(page, {counter_style})"
+    pages_counter = f"counter(pages, {counter_style})"
+
+    if format_type == "numeric":
+        content = page_counter
+
+    elif format_type == "labeled":
+        content = f'"Page " {page_counter}'
+
+    else:
+        content = (
+            f'"Page " {page_counter} '
+            f'" of " {pages_counter}'
+        )
+
+    return (
+        "@page {\n"
+        f"  {margin_box} {{\n"
+        f"      content: {content};\n"
+        "       font-size: 10pt;\n"
+        "       font-family: var(--font-stack);"
+        "   }\n"
+        "}\n"
+    )
+
 def render(node: Node, cursor_line=None) -> str:
     if isinstance(node, Document):
         title = str(node.meta.get("title", ""))
@@ -442,6 +502,8 @@ def render(node: Node, cursor_line=None) -> str:
         darkmode = str(node.meta.get("darkmode", "")).lower() in ("true", "1", "yes") # user feedback showed that not everyone agrees on "true"
         mode = "dark" if darkmode else "light"
 
+        page_number_css = generate_page_number_css(node.meta)
+
         stylesheet_path = f"themes/{html.escape(style)}/{mode}.css"
 
         head = (
@@ -449,9 +511,10 @@ def render(node: Node, cursor_line=None) -> str:
             "<!DOCTYPE html>\n<html>\n  <head>\n"
             "    <meta charset='utf-8'>\n"
             "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n"
-            f"    <title>{title}</title>\n"
-            f"    <meta name='author' content='{author}'>\n"
-            f"    <link rel='stylesheet' href='{stylesheet_path}'>\n"
+            f"   <title>{title}</title>\n"
+            f"   <meta name='author' content='{author}'>\n"
+            f"   <link rel='stylesheet' href='{stylesheet_path}'>\n"
+            f"   <style>\n{page_number_css}</style>\n"
             "  </head>"
         )
 

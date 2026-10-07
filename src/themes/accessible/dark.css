@@ -28,6 +28,8 @@
     --table-border: #3a3a3c;
 
     --highlight-bg: #665c00;
+
+    --font-stack: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @font-face {

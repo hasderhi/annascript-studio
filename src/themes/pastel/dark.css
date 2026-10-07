@@ -28,8 +28,9 @@
     --table-border: #3f3a4b;
 
     --highlight-bg: #997f00;
+    
+    --font-stack: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-
 
 body {
     background: var(--bg);
@@ -37,7 +38,7 @@ body {
     margin: 2rem auto;
     padding: 0 1.5rem;
     max-width: 900px;
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-stack);
     line-height: 1.6;
 }
 

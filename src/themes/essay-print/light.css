@@ -29,6 +29,8 @@
     --table-border: #d6d0c8;
 
     --highlight-bg: #fff3a8;
+
+    --font-stack: "Palatino Linotype", "Book Antiqua", "Georgia", "Times New Roman", serif;
 }
 
 body {
@@ -37,7 +39,7 @@ body {
     margin: 2.5rem auto;
     padding: 0 2rem;
     max-width: 720px;
-    font-family: "Palatino Linotype", "Book Antiqua", "Georgia", "Times New Roman", serif;
+    font-family: var(--font-stack);
     font-size: 1.12rem;
     line-height: 1.8;
     text-align: justify;

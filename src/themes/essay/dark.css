@@ -29,6 +29,8 @@
     --table-border: #3c3c40;
 
     --highlight-bg: #b49601;
+
+    --font-stack: "Georgia", "Times New Roman", serif;
 }
 
 body {
@@ -37,7 +39,7 @@ body {
     margin: 2.5rem auto;
     padding: 0 2rem;
     max-width: 760px;
-    font-family: "Georgia", "Times New Roman", serif;
+    font-family: var(--font-stack);
     font-size: 1.08rem;
     line-height: 1.75;
 }

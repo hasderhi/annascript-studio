@@ -29,6 +29,8 @@
     --table-border: #b6b6a0;
 
     --highlight-bg: #ffff66;
+
+    --font-stack: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 
@@ -38,7 +40,7 @@ body {
     margin: 2rem auto;
     padding: 0 1.5rem;
     max-width: 900px;
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-stack);
     line-height: 1.6;
 }
 

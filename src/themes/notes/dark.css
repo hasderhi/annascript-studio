@@ -29,6 +29,8 @@
     --table-border: #4a4a4d;
 
     --highlight-bg: #cabd00;
+
+    --font-stack: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 
@@ -38,8 +40,7 @@ body {
     margin: 2rem auto;
     padding: 0 1.5rem;
     max-width: 900px;
-
-    font-family: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: var(--font-stack);
     line-height: 1.65;
 }
 
