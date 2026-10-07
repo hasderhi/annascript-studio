@@ -484,10 +484,12 @@ def generate_page_number_css(meta):
 
     return (
         "@page {\n"
+        "   margin: 2.5cm;\n"
         f"  {margin_box} {{\n"
         f"      content: {content};\n"
         "       font-size: 10pt;\n"
         "       font-family: var(--font-stack);"
+        "       vertical-align: middle;"
         "   }\n"
         "}\n"
     )
