@@ -6,6 +6,7 @@ import html
 from typing import Callable
 import re
 import math
+import datetime
 
 # helpers go here
 def _parse_point(s):
@@ -504,8 +505,12 @@ def render(node: Node, cursor_line=None) -> str:
         darkmode = str(node.meta.get("darkmode", "")).lower() in ("true", "1", "yes") # user feedback showed that not everyone agrees on "true"
         mode = "dark" if darkmode else "light"
 
-        page_number_css = generate_page_number_css(node.meta)
+        include_date = str(node.meta.get("include_date", "")).lower() in ("true", "1", "yes")
+        date = datetime.datetime.now() if include_date else ""
 
+
+        page_number_css = generate_page_number_css(node.meta)
+        ""
         stylesheet_path = f"themes/{html.escape(style)}/{mode}.css"
 
         head = (
@@ -515,6 +520,7 @@ def render(node: Node, cursor_line=None) -> str:
             "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n"
             f"   <title>{title}</title>\n"
             f"   <meta name='author' content='{author}'>\n"
+            f"   <meta property='article:published_time' content='{date}'/>\n"
             f"   <link rel='stylesheet' href='{stylesheet_path}'>\n"
             f"   <style>\n{page_number_css}</style>\n"
             "  </head>"
