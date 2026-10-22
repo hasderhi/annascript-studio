@@ -58,12 +58,21 @@ Below are all current meta tags available:
 ```annascript
 @title: My Document
 @author: Annabeth Kisling
+@include_date: true
 @style: default
 @darkmode: true
 @pagenum: bottom-right-arabic-fractional
 ```
 
-About `pagenum`: This meta tag enables you to insert page numbering in different styles to your document. It accepts the following arguments:
+##### `include_date`
+
+If this tag is set to `true`, the date/time at compilation will be inserted.
+This does not effect the document contents in any way, but may be useful for
+articles on the web. It follows the [Open Graph Protocol Standard](https://ogp.me/) specifications.
+
+##### `pagenum`
+
+This meta tag enables you to insert page numbering in different styles to your document. It accepts the following arguments:
 
 `@pagenum: top/bottom-right/left-arabic/roman_lower/roman_upper-numeric/labeled/fractional`
 
