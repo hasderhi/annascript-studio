@@ -58,17 +58,49 @@ Below are all current meta tags available:
 ```annascript
 @title: My Document
 @author: Annabeth Kisling
+@category: Notes
+@keywords: this, is, just, an, example
 @include_date: true
 @style: default
 @darkmode: true
 @pagenum: bottom-right-arabic-fractional
 ```
 
+##### `title`
+
+The title of the document. This does not affect the document contents,
+but changes the title of the HTML output. The save-as dialog will also
+suggest the file name based on this element value.
+
+##### `author`
+
+The author of the document. This will also create a meta entry in the HTML.
+
+##### `category`
+
+The general category of the document. It does not affect the contents,
+but may be useful for organizing your documents.
+
+##### `keywords`
+
+Keywords relating to the document. Like `category`, it does not affect
+the contents, but may be useful for organizing your documents.
+
 ##### `include_date`
 
 If this tag is set to `true`, the date/time at compilation will be inserted.
 This does not effect the document contents in any way, but may be useful for
 articles on the web. It follows the [Open Graph Protocol Standard](https://ogp.me/) specifications.
+
+##### `style`
+
+This tag selects the theme of an annaScript document. By default, the
+theme is always set to `default`. By using this tag, you can select any
+installed theme instead.
+
+##### `darkmode`
+
+Every annaScript theme should have dark and light mode color definitions. By using this tag, you can select the dark version.
 
 ##### `pagenum`
 
