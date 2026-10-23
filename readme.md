@@ -4,11 +4,11 @@
 ![Version](https://img.shields.io/badge/Version-1.2.7-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
+![Platform](https://img.shields.io/badge/Platforms-macOS-blue)
 
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Addons-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Essentials-lightgrey)
-
 ![Dependencies](https://img.shields.io/badge/Dependencies-requests-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-packaging-lightgrey)
 
