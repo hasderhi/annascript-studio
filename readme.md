@@ -385,7 +385,7 @@ Optionally, you can also use dark mode (default is light):
 
 This project is the counter part to *annaScript*, the barebones version of annaScript without the editor. Check it out [on its GitHub repository](https://github.com/hasderhi/annascript)!
 
-Whilst *annaScript* itself isn't using any external dependencies, *annaScript Studio* uses *PySide6* for its GUI. All Qt libraries are used with dynamic linking, which complies to the license.
+Whilst *annaScript* itself isn't using any external dependencies, *annaScript Studio* uses *PySide6* for its GUI. All Qt libraries are used with dynamic linking, which complies with the license.
 
 All *annaScript* compiler source code and the built-in themes are made by the author and subject to her copyright. All code is released under the MIT-License (see ```license.md```) and therefore allows anyone to modify, copy, use or release it under the condition the author's work is credited and the license is included.
 
