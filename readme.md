@@ -1,16 +1,18 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.2.6-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.2.7-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
+![Platform](https://img.shields.io/badge/Platforms-macOS-blue)
 
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Addons-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-PySide6_Essentials-lightgrey)
-
 ![Dependencies](https://img.shields.io/badge/Dependencies-requests-lightgrey)
 ![Dependencies](https://img.shields.io/badge/Dependencies-packaging-lightgrey)
+
+![Preview Image](preview_image_3.png)
 
 ![Preview Image](preview_image.png)
 
@@ -58,12 +60,53 @@ Below are all current meta tags available:
 ```annascript
 @title: My Document
 @author: Annabeth Kisling
+@category: Notes
+@keywords: this, is, just, an, example
+@include_date: true
 @style: default
 @darkmode: true
 @pagenum: bottom-right-arabic-fractional
 ```
 
-About `pagenum`: This meta tag enables you to insert page numbering in different styles to your document. It accepts the following arguments:
+##### `title`
+
+The title of the document. This does not affect the document contents,
+but changes the title of the HTML output. The save-as dialog will also
+suggest the file name based on this element value.
+
+##### `author`
+
+The author of the document. This will also create a meta entry in the HTML.
+
+##### `category`
+
+The general category of the document. It does not affect the contents,
+but may be useful for organizing your documents.
+
+##### `keywords`
+
+Keywords relating to the document. Like `category`, it does not affect
+the contents, but may be useful for organizing your documents.
+
+##### `include_date`
+
+If this tag is set to `true`, the date/time at compilation will be inserted.
+This does not effect the document contents in any way, but may be useful for
+articles on the web. It follows the [Open Graph Protocol Standard](https://ogp.me/) specifications.
+
+##### `style`
+
+This tag selects the theme of an annaScript document. By default, the
+theme is always set to `default`. By using this tag, you can select any
+installed theme instead.
+
+##### `darkmode`
+
+Every annaScript theme should have dark and light mode color definitions. By using this tag, you can select the dark version.
+
+##### `pagenum`
+
+This meta tag enables you to insert page numbering in different styles to your document. It accepts the following arguments:
 
 `@pagenum: top/bottom-right/left-arabic/roman_lower/roman_upper-numeric/labeled/fractional`
 
@@ -342,7 +385,7 @@ Optionally, you can also use dark mode (default is light):
 
 This project is the counter part to *annaScript*, the barebones version of annaScript without the editor. Check it out [on its GitHub repository](https://github.com/hasderhi/annascript)!
 
-Whilst *annaScript* itself isn't using any external dependencies, *annaScript Studio* uses *PySide6* for its GUI. All Qt libraries are used with dynamic linking, which complies to the license.
+Whilst *annaScript* itself isn't using any external dependencies, *annaScript Studio* uses *PySide6* for its GUI. All Qt libraries are used with dynamic linking, which complies with the license.
 
 All *annaScript* compiler source code and the built-in themes are made by the author and subject to her copyright. All code is released under the MIT-License (see ```license.md```) and therefore allows anyone to modify, copy, use or release it under the condition the author's work is credited and the license is included.
 
