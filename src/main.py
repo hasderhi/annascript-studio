@@ -712,22 +712,80 @@ class FindReplaceDialog(QDialog):
         else:
             self.find_next()
 
+
     def replace_all(self):
         find_text = self.find_edit.text()
+
         if not find_text:
             return
 
-        cursor = self.editor.textCursor()
+        document = self.editor.document()
+        flags = self.get_find_flags()
+
+        if self.regex_cb.isChecked():
+            re_flags = QRegularExpression.PatternOption.NoPatternOption
+
+            if not self.case_cb.isChecked():
+                re_flags |= (
+                    QRegularExpression.PatternOption.CaseInsensitiveOption
+                )
+
+            pattern = QRegularExpression(find_text, re_flags)
+
+            if not pattern.isValid():
+                QMessageBox.warning(
+                    self,
+                    "Invalid Regular Expression",
+                    pattern.errorString()
+                )
+                return
+
+            text = document.toPlainText()
+            iterator = pattern.globalMatch(text)
+
+            while iterator.hasNext():
+                match = iterator.next()
+
+                if match.capturedLength() == 0:
+                    QMessageBox.warning(
+                        self,
+                        "Unsupported Regular Expression",
+                        "Replace All cannot process regular expressions "
+                        "that produce empty matches."
+                    )
+                    return
+        else:
+            pattern = find_text
+
+        replacement = self.replace_edit.text()
+
+        cursor = QTextCursor(document)
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+
+        replacements = 0
         cursor.beginEditBlock()
 
-        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        try:
+            while True:
+                match_cursor = document.find(
+                    pattern,
+                    cursor,
+                    flags
+                )
+
+                if match_cursor.isNull():
+                    break
+
+                match_cursor.insertText(replacement)
+
+                cursor = QTextCursor(match_cursor)
+                replacements += 1
+
+        finally:
+            cursor.endEditBlock()
+
         self.editor.setTextCursor(cursor)
 
-        while self.find_next():
-            current_cursor = self.editor.textCursor()
-            current_cursor.insertText(self.replace_edit.text())
-
-        cursor.endEditBlock()
 
 
 class RibbonGroup(QWidget):
