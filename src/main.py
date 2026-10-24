@@ -507,240 +507,504 @@ class SettingsDialog(QDialog):
 
 
 
-# Find/Replace
 class FindReplaceDialog(QDialog):
     def __init__(self, editor, replace_mode=False, parent=None):
         super().__init__(parent)
 
         self.editor = editor
         self.replace_mode = replace_mode
+        self._updating = False
 
-        self.setWindowTitle("Find & Replace" if replace_mode else "Find")
-        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
-        self.setMinimumWidth(420)
-        
+        self.setWindowTitle(
+            "Find and Replace" if replace_mode else "Find"
+        )
+        self.setWindowFlags(
+            self.windowFlags()
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.setMinimumWidth(440)
+
         self.init_stylesheet()
         self.init_ui()
+        self.init_shortcuts()
+
+        selection = editor.textCursor().selectedText()
+        if selection and "\n" not in selection:
+            self.find_edit.setText(selection)
+
+        self.find_edit.setFocus()
+        self.find_edit.selectAll()
+        self.update_status()
 
     def init_stylesheet(self):
         self.setStyleSheet("""
             QDialog {
-                background-color: #2B2B2B;
-                color: #E0E0E0;
+                background-color: #252526;
+                color: #CCCCCC;
             }
+
             QLabel {
-                font-size: 13px;
-                color: #E0E0E0;
+                color: #CCCCCC;
+                font-size: 12px;
             }
+
             QLineEdit {
                 background-color: #1E1E1E;
-                color: #FFFFFF;
-                padding: 5px;
-                border: 1px solid #444444;
-                border-radius: 4px;
-                selection-background-color: #444444;
+                color: #F0F0F0;
+                padding: 6px;
+                border: 1px solid #454545;
+                border-radius: 3px;
+                selection-background-color: #264F78;
             }
+
             QLineEdit:focus {
                 border: 1px solid #8f0000;
             }
+
+            QPushButton {
+                background-color: #333333;
+                color: #DDDDDD;
+                padding: 6px 10px;
+                border: 1px solid #454545;
+                border-radius: 3px;
+            }
+
+            QPushButton:hover {
+                background-color: #414141;
+            }
+
+            QPushButton:checked {
+                background-color: #5A2525;
+                border: 1px solid #B83B3B;
+                color: white;
+            }
+
+            QPushButton:disabled {
+                color: #777777;
+                background-color: #292929;
+            }
+
             QCheckBox {
-                color: #E0E0E0;
-                font-size: 12px;
+                color: #CCCCCC;
                 spacing: 6px;
             }
-            QPushButton {
-                background-color: #3C3C3C;
-                color: white;
-                padding: 6px 14px;
-                border: 1px solid #555555;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #4E4E4E;
-                border-color: #666666;
-            }
-            QPushButton:pressed {
-                background-color: #b83b3b;
-                border-color: #8f0000;
-            }
+
             QFrame#separator {
+                border: none;
                 border-top: 1px solid #3E3E3E;
-                margin-top: 5px;
-                margin-bottom: 5px;
-            }
-
-            QCheckBox::indicator:checked {
-                background-color: #b83b3b;
-                border-color: #8f0000;
-            }
-
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-                border: 1px solid #555555;
-                border-radius: 3px;
             }
         """)
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(10)
-        main_layout.setContentsMargins(12, 12, 12, 12)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(8)
+        find_row = QHBoxLayout()
+        find_row.setSpacing(5)
 
-        grid_layout.addWidget(QLabel("Find:"), 0, 0)
         self.find_edit = QLineEdit()
-        grid_layout.addWidget(self.find_edit, 0, 1)
+        self.find_edit.setPlaceholderText("Find")
+        self.find_edit.setClearButtonEnabled(True)
+        self.find_edit.setToolTip(
+            "Search text. Press Enter for the next match."
+        )
+
+        self.case_btn = QPushButton("Aa")
+        self.case_btn.setCheckable(True)
+        self.case_btn.setToolTip("Match Case")
+
+        self.whole_btn = QPushButton("ab")
+        self.whole_btn.setCheckable(True)
+        self.whole_btn.setToolTip("Match Whole Word")
+
+        self.regex_btn = QPushButton(".*")
+        self.regex_btn.setCheckable(True)
+        self.regex_btn.setToolTip("Use Regular Expression")
+
+        self.previous_btn = QPushButton("↑")
+        self.previous_btn.setToolTip("Previous Match (Shift+Enter)")
+
+        self.next_btn = QPushButton("↓")
+        self.next_btn.setToolTip("Next Match (Enter)")
+
+        find_row.addWidget(self.find_edit, 1)
+        find_row.addWidget(self.case_btn)
+        find_row.addWidget(self.whole_btn)
+        find_row.addWidget(self.regex_btn)
+        find_row.addWidget(self.previous_btn)
+        find_row.addWidget(self.next_btn)
+
+        layout.addLayout(find_row)
+
+        self.replace_row = QWidget()
+        replace_layout = QHBoxLayout(self.replace_row)
+        replace_layout.setContentsMargins(0, 0, 0, 0)
+        replace_layout.setSpacing(5)
+
+        self.replace_edit = QLineEdit()
+        self.replace_edit.setPlaceholderText("Replace")
+        self.replace_edit.setClearButtonEnabled(True)
+
+        self.replace_btn = QPushButton("Replace")
+        self.replace_all_btn = QPushButton("Replace All")
+
+        replace_layout.addWidget(self.replace_edit, 1)
+        replace_layout.addWidget(self.replace_btn)
+        replace_layout.addWidget(self.replace_all_btn)
+
+        layout.addWidget(self.replace_row)
+        self.replace_row.setVisible(self.replace_mode)
+
+        separator = QFrame()
+        separator.setObjectName("separator")
+        layout.addWidget(separator)
+
+        self.status_label = QLabel("Enter text to search.")
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
+
+        self.close_btn = QPushButton("Close")
+        self.close_btn.clicked.connect(self.close)
+
+        close_layout = QHBoxLayout()
+        close_layout.addStretch()
+        close_layout.addWidget(self.close_btn)
+        layout.addLayout(close_layout)
+
+        # Connections
+        self.find_edit.textChanged.connect(self.update_status)
+        self.case_btn.toggled.connect(self.update_status)
+        self.whole_btn.toggled.connect(self.update_status)
+        self.regex_btn.toggled.connect(self.update_status)
+
+        self.find_edit.returnPressed.connect(self.find_next)
+        self.next_btn.clicked.connect(self.find_next)
+        self.previous_btn.clicked.connect(self.find_prev)
 
         if self.replace_mode:
-            grid_layout.addWidget(QLabel("Replace:"), 1, 0)
-            self.replace_edit = QLineEdit()
-            grid_layout.addWidget(self.replace_edit, 1, 1)
+            self.replace_btn.clicked.connect(self.replace_one)
+            self.replace_all_btn.clicked.connect(self.replace_all)
+            self.replace_edit.returnPressed.connect(self.replace_one)
 
-        main_layout.addLayout(grid_layout)
+    def init_shortcuts(self):
+        self._shortcuts = []
 
-        options_layout = QHBoxLayout()
-        self.case_cb = QCheckBox("Match Case")
-        self.whole_cb = QCheckBox("Whole Words")
-        self.regex_cb = QCheckBox("Regex")
-        
-        options_layout.addWidget(self.case_cb)
-        options_layout.addWidget(self.whole_cb)
-        options_layout.addWidget(self.regex_cb)
-        main_layout.addLayout(options_layout)
+        shortcuts = [
+            ("Escape", self.close),
+            ("Return", self.find_next),
+            ("Enter", self.find_next),
+            ("Shift+Return", self.find_prev),
+            ("Shift+Enter", self.find_prev),
+        ]
 
-        sep = QFrame()
-        sep.setObjectName("separator")
-        main_layout.addWidget(sep)
-
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(6)
-
-        find_next_btn = QPushButton("Find Next")
-        find_prev_btn = QPushButton("Find Prev")
-        btn_layout.addWidget(find_next_btn)
-        btn_layout.addWidget(find_prev_btn)
-
-        find_next_btn.clicked.connect(self.find_next)
-        find_prev_btn.clicked.connect(self.find_prev)
-
-        if self.replace_mode:
-            replace_btn = QPushButton("Replace")
-            replace_all_btn = QPushButton("Replace All")
-            btn_layout.addWidget(replace_btn)
-            btn_layout.addWidget(replace_all_btn)
-
-            replace_btn.clicked.connect(self.replace_one)
-            replace_all_btn.clicked.connect(self.replace_all)
-
-        main_layout.addLayout(btn_layout)
-
-        self.find_edit.setFocus()
+        for sequence, callback in shortcuts:
+            shortcut = QShortcut(QKeySequence(sequence), self)
+            shortcut.setContext(
+                Qt.ShortcutContext.WidgetWithChildrenShortcut
+            )
+            shortcut.activated.connect(callback)
+            self._shortcuts.append(shortcut)
 
     def get_find_flags(self):
         flags = QTextDocument.FindFlag(0)
-        if self.case_cb.isChecked():
+
+        if self.case_btn.isChecked():
             flags |= QTextDocument.FindFlag.FindCaseSensitively
-        if self.whole_cb.isChecked():
+
+        if self.whole_btn.isChecked():
             flags |= QTextDocument.FindFlag.FindWholeWords
+
         return flags
 
-    def find_next(self):
+    def get_pattern(self):
         text = self.find_edit.text()
+
         if not text:
+            return None, None
+
+        if self.regex_btn.isChecked():
+            regex_flags = (
+                QRegularExpression.PatternOption.NoPatternOption
+            )
+
+            if not self.case_btn.isChecked():
+                regex_flags |= (
+                    QRegularExpression.PatternOption.CaseInsensitiveOption
+                )
+
+            pattern = QRegularExpression(text, regex_flags)
+
+            if not pattern.isValid():
+                return None, pattern.errorString()
+
+            return pattern, None
+
+        return text, None
+
+    def update_status(self, *_):
+        if self._updating:
+            return
+
+        pattern, error = self.get_pattern()
+
+        if error:
+            self.status_label.setText(
+                f"Invalid regular expression: {error}"
+            )
+            self.status_label.setStyleSheet("color: #F48771;")
+            return
+
+        if pattern is None:
+            self.status_label.setText("Enter text to search.")
+            self.status_label.setStyleSheet("color: #AAAAAA;")
+            return
+
+        matches = self.collect_matches(pattern)
+
+        self.status_label.setStyleSheet("color: #AAAAAA;")
+
+        if not matches:
+            self.status_label.setText("No results found.")
+        else:
+            self.status_label.setText(
+                f"{len(matches)} match(es) in document."
+            )
+
+    def collect_matches(self, pattern):
+        document = self.editor.document()
+        flags = self.get_find_flags()
+        matches = []
+
+        cursor = QTextCursor(document)
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+
+        while True:
+            match = document.find(pattern, cursor, flags)
+
+            if match.isNull():
+                break
+
+            start = match.selectionStart()
+            end = match.selectionEnd()
+
+            if end <= start:
+                break
+
+            matches.append((start, end))
+
+            cursor = QTextCursor(document)
+            cursor.setPosition(end)
+
+        return matches
+
+    def find_next(self):
+        pattern, error = self.get_pattern()
+
+        if error:
+            self.update_status()
+            return False
+
+        if pattern is None:
             return False
 
         flags = self.get_find_flags()
-        
-        if self.regex_cb.isChecked():
-            re_flags = QRegularExpression.PatternOption.NoPatternOption
-            if not self.case_cb.isChecked():
-                re_flags |= QRegularExpression.PatternOption.CaseInsensitiveOption
-            
-            expr = QRegularExpression(text, re_flags)
-            found = self.editor.find(expr, flags)
-        else:
-            found = self.editor.find(text, flags)
+        document = self.editor.document()
+        cursor = self.editor.textCursor()
 
-        if not found:
-            cursor = self.editor.textCursor()
+        if cursor.hasSelection():
+            cursor.setPosition(cursor.selectionEnd())
+
+        match = document.find(pattern, cursor, flags)
+
+        if match.isNull():
+            cursor = QTextCursor(document)
             cursor.movePosition(QTextCursor.MoveOperation.Start)
-            self.editor.setTextCursor(cursor)
-            
-            if self.regex_cb.isChecked():
-                found = self.editor.find(QRegularExpression(text, re_flags), flags)
-            else:
-                found = self.editor.find(text, flags)
-                
-        return found
+            match = document.find(pattern, cursor, flags)
+
+        if match.isNull():
+            self.status_label.setText("No results found.")
+            return False
+
+        self.editor.setTextCursor(match)
+        self.status_label.setText("Match selected.")
+        return True
 
     def find_prev(self):
-        text = self.find_edit.text()
-        if not text:
-            return
+        pattern, error = self.get_pattern()
 
-        flags = self.get_find_flags() | QTextDocument.FindFlag.FindBackward
+        if error:
+            self.update_status()
+            return False
 
-        if self.regex_cb.isChecked():
-            re_flags = QRegularExpression.PatternOption.NoPatternOption
-            if not self.case_cb.isChecked():
-                re_flags |= QRegularExpression.PatternOption.CaseInsensitiveOption
-            
-            expr = QRegularExpression(text, re_flags)
-            found = self.editor.find(expr, flags)
-        else:
-            found = self.editor.find(text, flags)
+        if pattern is None:
+            return False
 
-        if not found:
-            cursor = self.editor.textCursor()
+        flags = (
+            self.get_find_flags()
+            | QTextDocument.FindFlag.FindBackward
+        )
+
+        document = self.editor.document()
+        cursor = self.editor.textCursor()
+
+        if cursor.hasSelection():
+            cursor.setPosition(cursor.selectionStart())
+
+        match = document.find(pattern, cursor, flags)
+
+        if match.isNull():
+            cursor = QTextCursor(document)
             cursor.movePosition(QTextCursor.MoveOperation.End)
-            self.editor.setTextCursor(cursor)
-            
-            if self.regex_cb.isChecked():
-                self.editor.find(QRegularExpression(text, re_flags), flags)
-            else:
-                self.editor.find(text, flags)
+            match = document.find(pattern, cursor, flags)
+
+        if match.isNull():
+            self.status_label.setText("No results found.")
+            return False
+
+        self.editor.setTextCursor(match)
+        self.status_label.setText("Match selected.")
+        return True
 
     def replace_one(self):
-        cursor = self.editor.textCursor()
-        if cursor.hasSelection():
-            cursor.insertText(self.replace_edit.text())
-            self.find_next()
-        else:
-            self.find_next()
+        if not self.replace_mode:
+            return
 
+        pattern, error = self.get_pattern()
+
+        if error:
+            self.update_status()
+            return
+
+        if pattern is None:
+            return
+
+        current = self.editor.textCursor()
+
+        is_match = False
+
+        if current.hasSelection():
+            selected = current.selectedText()
+
+            if self.regex_btn.isChecked():
+                match = pattern.match(selected)
+
+                is_match = (
+                    match.hasMatch()
+                    and match.capturedStart() == 0
+                    and match.capturedLength() == len(selected)
+                )
+            else:
+                is_match = (
+                    selected == self.find_edit.text()
+                    if self.case_btn.isChecked()
+                    else selected.casefold()
+                    == self.find_edit.text().casefold()
+                )
+
+                if is_match and self.whole_btn.isChecked():
+                    is_match = (
+                        re.fullmatch(
+                            r"\w+",
+                            selected,
+                            flags=re.UNICODE
+                        ) is not None
+                        and selected == self.find_edit.text()
+                    )
+
+        if not is_match:
+            if not self.find_next():
+                return
+
+            current = self.editor.textCursor()
+
+        replacement = self.replace_edit.text()
+
+        if self.regex_btn.isChecked():
+            match = pattern.match(current.selectedText())
+
+            if match.hasMatch():
+                replacement = self.expand_replacement(
+                    replacement,
+                    match
+                )
+
+        current.insertText(replacement)
+        self.editor.setTextCursor(current)
+
+        self.update_status()
+        self.find_next()
+
+    @staticmethod
+    def expand_replacement(replacement, match):
+        result = []
+        i = 0
+
+        while i < len(replacement):
+            if replacement[i] == "\\" and i + 1 < len(replacement):
+                if replacement[i + 1] == "$":
+                    result.append("$")
+                    i += 2
+                    continue
+
+            if replacement[i] == "$":
+                if (
+                    i + 1 < len(replacement)
+                    and replacement[i + 1].isdigit()
+                ):
+                    j = i + 1
+
+                    while j < len(replacement) and replacement[j].isdigit():
+                        j += 1
+
+                    group = int(replacement[i + 1:j])
+
+                    if group < match.lastCapturedIndex() + 1:
+                        result.append(match.captured(group))
+                        i = j
+                        continue
+
+                elif (
+                    i + 1 < len(replacement)
+                    and replacement[i + 1] == "{"
+                ):
+                    end = replacement.find("}", i + 2)
+
+                    if end != -1:
+                        name = replacement[i + 2:end]
+                        result.append(match.captured(name))
+                        i = end + 1
+                        continue
+
+            result.append(replacement[i])
+            i += 1
+
+        return "".join(result)
 
     def replace_all(self):
-        find_text = self.find_edit.text()
+        if not self.replace_mode:
+            return
 
-        if not find_text:
+        pattern, error = self.get_pattern()
+
+        if error:
+            QMessageBox.warning(
+                self,
+                "Invalid Regular Expression",
+                error
+            )
+            return
+
+        if pattern is None:
             return
 
         document = self.editor.document()
         flags = self.get_find_flags()
 
-        if self.regex_cb.isChecked():
-            re_flags = QRegularExpression.PatternOption.NoPatternOption
+        matches = []
+        text = document.toPlainText()
 
-            if not self.case_cb.isChecked():
-                re_flags |= (
-                    QRegularExpression.PatternOption.CaseInsensitiveOption
-                )
-
-            pattern = QRegularExpression(find_text, re_flags)
-
-            if not pattern.isValid():
-                QMessageBox.warning(
-                    self,
-                    "Invalid Regular Expression",
-                    pattern.errorString()
-                )
-                return
-
-            text = document.toPlainText()
+        if self.regex_btn.isChecked():
             iterator = pattern.globalMatch(text)
 
             while iterator.hasNext():
@@ -750,41 +1014,85 @@ class FindReplaceDialog(QDialog):
                     QMessageBox.warning(
                         self,
                         "Unsupported Regular Expression",
-                        "Replace All cannot process regular expressions "
+                        "Replace All cannot process expressions "
                         "that produce empty matches."
                     )
                     return
+
+                matches.append((
+                    match.capturedStart(),
+                    match.capturedEnd(),
+                    match
+                ))
+
+            if self.whole_btn.isChecked():
+                matches = [
+                    item for item in matches
+                    if self.is_whole_word(text, item[0], item[1])
+                ]
+
         else:
-            pattern = find_text
+            matches = [
+                (start, end, None)
+                for start, end in self.collect_matches(pattern)
+            ]
+
+        if not matches:
+            self.status_label.setText("No results to replace.")
+            return
 
         replacement = self.replace_edit.text()
+        count = 0
 
         cursor = QTextCursor(document)
-        cursor.movePosition(QTextCursor.MoveOperation.Start)
-
-        replacements = 0
         cursor.beginEditBlock()
 
         try:
-            while True:
-                match_cursor = document.find(
-                    pattern,
-                    cursor,
-                    flags
+            for start, end, regex_match in reversed(matches):
+                cursor.setPosition(start)
+                cursor.setPosition(
+                    end,
+                    QTextCursor.MoveMode.KeepAnchor
                 )
 
-                if match_cursor.isNull():
-                    break
+                value = replacement
 
-                match_cursor.insertText(replacement)
+                if regex_match is not None:
+                    value = self.expand_replacement(
+                        replacement,
+                        regex_match
+                    )
 
-                cursor = QTextCursor(match_cursor)
-                replacements += 1
+                cursor.insertText(value)
+                count += 1
 
         finally:
             cursor.endEditBlock()
 
         self.editor.setTextCursor(cursor)
+        self.update_status()
+
+        self.status_label.setText(
+            f"Replaced {count} occurrence(s)."
+        )
+
+    @staticmethod
+    def is_whole_word(text, start, end):
+        def is_word_char(char):
+            return char == "_" or char.isalnum()
+
+        before_ok = (
+            start == 0
+            or not is_word_char(text[start - 1])
+        )
+
+        after_ok = (
+            end >= len(text)
+            or not is_word_char(text[end])
+        )
+
+        return before_ok and after_ok
+
 
 
 
