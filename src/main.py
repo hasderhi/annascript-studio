@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
     QLabel, QGridLayout, QSplitter, QFileDialog, QDialog, 
     QLineEdit, QPushButton, QMessageBox, QTabWidget, QTableWidget,
     QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea,
-    QFormLayout, QLabel, QSpinBox, QComboBox
+    QFormLayout, QLabel, QSpinBox, QComboBox, QTextBrowser
 )
 
 from compiler_api import (
@@ -172,13 +172,39 @@ ICON_MAPPING = {
     "GitHub": "folder-git-2.png",
     "About this Application": "circle-question-mark.png",
     "License": "scale.png",
-    "Symbol Reference": "book-marked.png",
+    "Reference && Manual": "book-marked.png",
     "Developer Website": "globe.png",
     "Developer GitHub": "git-branch.png",
     "Latest Release": "gift.png"
 }
 
 DEFAULT_PATH = f"{QDir.homePath()}/Documents"
+
+GUIDE_CSS = """
+    body { color: #D4D4D4; font-size: 13px; }
+    h1 { color: #FFFFFF; font-size: 20px; }
+    h2 { color: #FFFFFF; font-size: 16px; margin-top: 18px; }
+    a { color: #b83b3b; }
+    code { background-color: #2D2D2D; color: #E0E0E0; font-family: Consolas, monospace; }
+    pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
+    th { background-color: #2D2D2D; color: #FFFFFF; }
+"""
+
+
+def _p(html):
+    return f"<p>{html}</p>"
+
+def _code(src):
+    return "<pre>" + html.escape(src.strip("\n"), quote=False) + "</pre>"
+
+def _table(rows, header=None):
+    out = '<table cellspacing="0" cellpadding="5" width="100%">'
+    if header:
+        out += "<tr>" + "".join(f'<th align="left">{h}</th>' for h in header) + "</tr>"
+    for first, *rest in rows:
+        out += f"<tr><td><code>{first}</code></td>"
+        out += "".join(f"<td>{c}</td>" for c in rest) + "</tr>"
+    return out + "</table>"
 
 # Startup and helpers
 title(CURRENT_VERSION)
@@ -1403,7 +1429,7 @@ class RibbonMenu(QWidget):
             ["GitHub"]
         ])
         about_group = RibbonGroup("About", [
-            ["About this Application", "License", "Symbol Reference"],
+            ["About this Application", "License", "Reference && Manual"],
             ["Developer Website", "Developer GitHub", "Latest Release"]
         ])
 
@@ -1419,7 +1445,7 @@ class RibbonMenu(QWidget):
 
         about_group.buttons["About this Application"].clicked.connect(self.help_ops["show_about"])
         about_group.buttons["License"].clicked.connect(self.help_ops["show_license"])
-        about_group.buttons["Symbol Reference"].clicked.connect(self.help_ops["show_symbol_ref"])
+        about_group.buttons["Reference && Manual"].clicked.connect(self.help_ops["show_symbol_ref"])
         about_group.buttons["Developer Website"].clicked.connect(lambda: open_url("https://tk-dev-software.com"))
         about_group.buttons["Developer GitHub"].clicked.connect(lambda: open_url("https://github.com/hasderhi/"))
         about_group.buttons["Latest Release"].clicked.connect(lambda: open_url("https://github.com/hasderhi/annascript-studio/releases/latest"))
@@ -1818,10 +1844,38 @@ class FilterableTable(QTableWidget):
         menu.exec(self.viewport().mapToGlobal(pos))
 
 
+
+
+class GuideBrowser(QTextBrowser):
+    def __init__(self, sections):
+        super().__init__()
+        self.setOpenLinks(False)
+        self.anchorClicked.connect(self._on_anchor)
+        self.document().setDefaultStyleSheet(GUIDE_CSS)
+        self.setHtml(self._build(sections))
+
+    def _build(self, sections):
+        toc = " &nbsp;·&nbsp; ".join(f'<a href="#{a}">{t}</a>' for a, t, _ in sections)
+        parts = [f"<h1>annaScript Guide</h1><p>{toc}</p>"]
+        for anchor, title, body in sections:
+            parts.append(f'<a name="{anchor}"></a><h2>{title}</h2>{body}')
+        return "".join(parts)
+
+    def _on_anchor(self, url):
+        if url.scheme() == "" and url.hasFragment():
+            self.scrollToAnchor(url.fragment())
+        else:
+            QDesktopServices.openUrl(url)
+
+    def filter(self, text):
+        self.moveCursor(QTextCursor.MoveOperation.Start)
+        if text:
+            self.find(text)
+
 class SymbolReferenceDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Symbol Reference")
+        self.setWindowTitle("Reference and User Manual")
         self.resize(760, 560)
 
         self.setStyleSheet("""
@@ -1900,6 +1954,14 @@ class SymbolReferenceDialog(QDialog):
                 selection-background-color: #8f0000;
                 selection-color: #FFFFFF;
             }
+            QTextBrowser {
+                background-color: #252526;
+                color: #D4D4D4;
+                border: none;
+                padding: 6px;
+                selection-background-color: #8f0000;
+                selection-color: #FFFFFF;
+            }
         """)
 
         layout = QVBoxLayout(self)
@@ -1915,7 +1977,8 @@ class SymbolReferenceDialog(QDialog):
         layout.addWidget(self.tabs)
 
         self.tables = []
-        self._add_tab("General", self.general_symbols())
+        self._add_guide_tab("Guide", self.guide_sections())
+        self._add_tab("General Symbols", self.general_symbols())
         self._add_tab("Page Structure", self.page_structure())
         self._add_tab("Math && Logic", self.math_symbols()) # nvm, it was a implementation error on my side, Qt uses ampersands as shortcut directives...
         self._add_tab("Greek (lowercase)", self.greek_lower())
@@ -1934,6 +1997,259 @@ class SymbolReferenceDialog(QDialog):
         for table in self.tables:
             table.filter(text)
 
+    def _add_guide_tab(self, name, sections):
+        guide = GuideBrowser(sections)
+        self.tables.append(guide)
+        self.tabs.addTab(guide, name)
+
+    def guide_sections(self):
+        return [
+            ("intro", "Introduction",
+                _p("<i>annaScript</i> is a simple markup language that compiles to HTML. "
+                   "Its syntax is similar to <i>markdown</i>, extended with CSS-based features, "
+                   "sub/superscript, charts and an easily extendible macro system. "
+                   "The preview updates in realtime while you type.")
+                + _p("This guide covers the syntax. Special symbols and shortcuts "
+                     "are listed in the other tabs.")),
+
+            ("meta", "Meta Tags",
+                _p("Meta tags define properties of the document. They belong at the "
+                   "beginning of the document, but are optional.")
+                + _code("""
+@title: My Document
+@author: Annabeth Kisling
+@category: Notes
+@keywords: this, is, just, an, example
+@include_date: true
+@style: default
+@darkmode: true
+@pagenum: bottom-right-arabic-fractional
+""")
+                + _table([
+                    ("title", "Title of the HTML output. Also the suggested file name when saving."),
+                    ("author", "Author of the document. Creates a meta entry in the HTML."),
+                    ("category", "General category. Does not affect the contents, useful for organizing."),
+                    ("keywords", "Keywords for the document. Like <code>category</code>, for organizing."),
+                    ("include_date", "If <code>true</code>, the date/time of compilation is inserted."),
+                    ("style", "Selects the theme (default: <code>default</code>)."),
+                    ("darkmode", "If <code>true</code>, the dark version of the theme is used."),
+                    ("pagenum", "Inserts page numbers (see below)."),
+                ], header=["Tag", "Description"])
+                + _p("<b>Page numbers:</b> the position, alignment, numeral type and "
+                     "style are combined in one value:")
+                + _code("@pagenum: top/bottom-left/right-arabic/roman_lower/roman_upper-numeric/labeled/fractional")
+                + _p("For example, uppercase roman numbering in the top left corner:")
+                + _code("@pagenum: top-left-roman_upper-numeric")),
+
+            ("headings", "Headings",
+                _p("Headings work like in <i>markdown</i> and are equivalent to "
+                   "<code>&lt;h1&gt;</code> to <code>&lt;h6&gt;</code> in HTML.")
+                + _code("""
+# H1 heading
+## H2 heading
+### H3 heading
+#### H4 heading
+""")),
+
+            ("paragraphs", "Paragraphs",
+                _p("Paragraphs are separated by at least one blank line.")
+                + _code("""
+This is paragraph one.
+It continues here.
+
+This is paragraph two.
+""")),
+
+            ("formatting", "Formatting",
+                _p("Text is formatted by wrapping it in certain characters. Supported are "
+                   "<b>bold</b>, <i>italic</i>, underlined and highlighted text, "
+                   "<code>code</code> and sub/superscript.")
+                + _code("""
+*italic*
+
+**bold**
+
+***both***
+
+==highlight==
+
+`code (single line)`
+
+^^super^^
+
+,,sub,,
+
+_underline_
+""")),
+
+            ("links", "Links",
+                _p("Links use the same syntax as in <i>markdown</i>.")
+                + _code("[Visit My Website](http://tk-dev-software.com)")),
+
+            ("codeblocks", "Code Blocks",
+                _p("Code blocks are similar to <i>markdown</i>. Keyword highlighting is "
+                   "supported for Python, C, C++, C#, JavaScript and Java. Other languages "
+                   "get basic syntax highlighting. For keyword highlighting, specify the "
+                   "language after the opening backticks.")
+                + _code('''
+```python
+name = input("What's your name? ")
+print(f"Hello, {name}!")
+```
+''')
+                + _p("<b>Note:</b> when printing or exporting to PDF, make sure your code "
+                     "does not exceed the available page width. Code that extends beyond "
+                     "the page may be truncated or hidden.")),
+
+            ("lists", "Lists",
+                _p("Ordered and unordered lists are supported, including sub items.")
+                + _code("""
+- Item A
+- Item B
+    - Subitem
+    - Subitem
+
+1. First
+2. Second
+""")),
+
+            ("todo", "ToDo Lists",
+                _p("ToDo lists use the usual syntax of most markup languages.")
+                + _code("""
+[x] checked
+[] unchecked
+[ x ] checked
+[   ] unchecked
+""")),
+
+            ("markers", "Markers",
+                _p("Markers are colored text inserts with either a checkmark (✓) or a "
+                   "cross (✕). If the specified color is not supported by your theme, "
+                   "its default accent color is used.")
+                + _code("""
+[!green] This is green.
+[!yellow] This is yellow.
+[!red] This is red.
+[!blue] This is blue.
+[!example] Unsupported colors use the theme's default accent color.
+[!fail] This is red with a cross.
+""")),
+
+            ("tables", "Tables",
+                _p("Tables are written with the separator <code>|</code>. If there are "
+                   "dashes below the first row, it becomes the table header.")
+                + _code("""
+| Name  | Age | Grade |
+|-------|-----|-------|
+| Alice | 17  | A     |
+| Bob   | 16  | B     |
+""")),
+
+            ("macros", "Macros",
+                _p("Macros are the easiest way to add special elements to a document. "
+                   "All macros follow the same syntax:")
+                + _code("""
+::type optional-attributes
+content inside macro...
+::
+""")
+                + _p("Built-in macros:")
+                + _code("""
+::box type=danger title="Attention!"
+Danger awaits...
+::
+
+::box type=warning title="Warning!"
+Be warned!
+::
+
+::box type=info title="Information"
+Be informed!
+::
+
+::def
+(a+b)^^2^^ = a^^2^^ + 2ab + b^^2^^
+::
+
+::note
+Remember this!
+::
+
+::box
+Hello, I'm just a box!
+::
+
+::center
+Centered text
+::
+""")
+                + _p("Macros are equivalent to CSS classes. To add your own, add a class "
+                     "to your theme's CSS file and use its name as the macro type.")),
+
+            ("charts", "Charts",
+                _p("Charts are macros as well. Two types are supported: <b>pie</b> charts "
+                   "(with legend) and <b>bar</b> charts (without legend). Set the type "
+                   "with <code>type=</code> and optionally a <code>title</code>.")
+                + _p("Inside the macro, write a table with two columns: the label, and the "
+                     "data as an integer or a float (separated by a dot).")
+                + _p("<b>All entries of a pie chart must add up to 100</b>, otherwise the "
+                     "chart does not reflect accurate data.")
+                + _code("""
+::chart type=pie title="My awesome pie chart"
+|Label 1|20.5|
+|Label 2|19.5|
+|Label 3|60.0|
+::
+
+::chart type=bar title="My awesome bar chart"
+|2023|20000|
+|2024|25000|
+|2025|27000|
+::
+""")
+                + _p("If something is wrong, one of these messages is shown instead:")
+                + _table([
+                    ("Error creating chart, check table data!", "The data is faulty."),
+                    ("Unsupported chart type", "The chart type is missing or not recognized."),
+                    ("No data provided.", "There is no recognizable data in the macro."),
+                ])),
+
+            ("coordinates", "Coordinate Systems",
+                _p("Coordinate systems can display points, vectors and functions:")
+                + _code("""
+::coordinates scale=scale title="My coordinate system"
+|label|type|position or expression|domain=start:end|
+::
+""")
+                + _p("For example, a point, a function and a vector:")
+                + _code("""
+::coordinates scale=25 title="Demonstration"
+|P|point|10,13|
+|f(x)|function|2x**2-1|domain=-10:10|
+|v|vector|20,15|
+::
+""")
+                + _p("In functions, the only allowed variable is <code>x</code>. Errors:")
+                + _table([
+                    ("Error rendering coordinate system, disallowed character(s) in expression!",
+                     "Disallowed characters were used."),
+                    ("Error rendering coordinate system, check syntax/expressions!",
+                     "Any other syntax error."),
+                ])),
+
+            ("themes", "Themes",
+                _p("All themes are defined through CSS files. Select a theme and the light "
+                   "or dark variant with meta tags:")
+                + _code("""
+@style: myTheme
+@darkmode: true
+""")
+                + _p("To create your own theme, add a folder with the theme name to the "
+                     "<code>/themes</code> folder and create the files <code>light.css</code> "
+                     "and <code>dark.css</code> inside. The easiest way to start is to copy "
+                     "and modify one of the built-in themes.")),
+        ]
+
     # this is going to be a real pain to update.
     # going to replace this in the next update.
 
@@ -1946,6 +2262,8 @@ class SymbolReferenceDialog(QDialog):
     # update 11/09/2026 - I'm sure I will replace it soon...
 
     # update 28/09/2026 - It's getting repetitive...
+
+    # Update 27/10/2026 You won't believe this...
 
     def math_symbols(self):
         return [
