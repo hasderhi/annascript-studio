@@ -3,6 +3,7 @@
 /dev/
 /docs/
 /src/res/settings/*
+/src/res/dicts/user.txt
 /.venv/
 /src/__pycache__/
 notice.txt
