@@ -1,7 +1,7 @@
 # annaScript Studio
 
 ![Python](https://img.shields.io/badge/Python-3.13.2-blue)
-![Version](https://img.shields.io/badge/Version-1.2.9-brightgreen)
+![Version](https://img.shields.io/badge/Version-1.3.0-brightgreen)
 ![Platform](https://img.shields.io/badge/Platforms-Windows-blue)
 ![Platform](https://img.shields.io/badge/Platforms-Linux-blue)
 ![Platform](https://img.shields.io/badge/Platforms-macOS-blue)
@@ -48,9 +48,25 @@ If you want to use the Python version, simply follow these instructions:
 
 You can also build *annaScript Studio* for any other OS using PyInstaller. Make sure to enable dynamic linking in order to comply with the *PySide6* license.
 
+### Spell Checking
+
+*annaScript Studio* has built-in spell checking available for the following languages:
+
+- English
+- Deutsch
+- Español
+- Français
+- Italiano
+
+To use it, enable in the settings. When a word is unknown, it will be underlined with red dots. 
+
+Right clicking the word reveils possible suggestions and the options to ignore the word or add it to the dictionary. The first option is temporary and only lasts for the session, the second one permanently writes the word into the user dictionary. This is useful for words like names, places or other correct phrases not recognized by the spell check. 
+
+To access or modify the dictionary, open the `user.txt` file inside `/res/dicts/`.
+
 ### Syntax and Macros
 
-Most of the syntax is similar to *markdown*, with some features extending its functionality. Below you'll find all current elements of *annaScript*'s syntax.
+Most of the syntax is similar to *markdown*, with features extending its functionality. Below you'll find all current elements of *annaScript*'s syntax.
 
 #### Meta tags
 

@@ -33,7 +33,8 @@ from PySide6.QtGui import (
     QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
     QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase,
-    QPainter, QPageLayout, QPageSize
+    QPainter, QPageLayout, QPageSize, QTextBlockUserData
+
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
@@ -43,6 +44,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea,
     QFormLayout, QLabel, QSpinBox, QComboBox, QTextBrowser
 )
+from symspellpy import SymSpell, Verbosity
 
 from compiler_api import (
     render_to_tempfile, 
@@ -67,7 +69,7 @@ from logger import (
 # Constants
 DO_NOT_CHECK_FOR_UPDATES = False
 
-CURRENT_VERSION = "v1.2.9"
+CURRENT_VERSION = "v1.3.0"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
 
 # change these if you've forked the repo
@@ -92,25 +94,35 @@ LOCAL_ASSET_EXTENSIONS = {
 
 SETTINGS = {
     "General": {
-        "author-name": (None, "Default author name", "text", None, ""),
-        "default-theme": (None, "Default theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", 
-                                                              "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default"),
-        "default-path": (None, "Default file path", "text", None, ""),
-        "start-with-darkmode-as-default": (None, "Start documents in dark mode", "checkbox", None, False),
+        # "author-name": (None, "Default author name", "text", None, ""),
+        # "default-theme": (None, "Default theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", 
+        #                                                       "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default"),
+        # "start-with-darkmode-as-default": (None, "Start documents in dark mode", "checkbox", None, False),
     },
-    "Rendering": {
-        "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
-        "enable-dynamic": (None, "Enable dynamic rendering (BETA)", "checkbox", None, False)
+    "Spell Check": {
+        "enable-spellcheck": (None, "Enable spell checking", "checkbox", None, False),
+        "spellcheck-language": (None, "Language", "dropdown", ["English", "Deutsch", "Español", "Français", "Italiano"], "English"),
     },
+    # "Rendering": {
+    #     "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
+    # },
     "View": {
-        "font-size": (None, "Editor font size", "spinbox", [1, 200], 14),
+        "font-size": (None, "Editor font size", "spinbox", [1, 200], 12),
     },
-    "Advanced": {
-        "update-check": (None, "Check for updates", "checkbox", None, True),
-        "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
-    }
+    # "Advanced": {
+    #     "update-check": (None, "Check for updates", "checkbox", None, True),
+    #     "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
+    # }
 }
 
+SPELLCHECK_LANGUAGES = {
+    "English": "en",
+    "Deutsch": "de",
+    "Español": "es",
+    "Français": "fr",
+    "Italiano": "it",
+}
+USER_DICTIONARY_PATH = "res/dicts/user.txt"
 
 ICON_MAPPING = {
     "Save": "save.png",
@@ -301,21 +313,229 @@ def get_white_icon(icon_path):
     return QIcon(pixmap)
 
 
+class SettingsManager:
+
+    def __init__(self, defaults: dict):
+        self.defaults = defaults
+        self.defaults_flat = self._flatten_defaults(defaults)
+
+        self.settings = {}
+        self.load_warning = None
+
+        self.settings = self.load_settings()
+
+    @staticmethod
+    def _flatten_defaults(config: dict) -> dict:
+        result = {}
+
+        for category in config.values():
+            for key, info in category.items():
+                result[key] = info[4]
+
+        return result
+
+    @staticmethod
+    def _get_path() -> Path:
+        return Path(resource_path(
+            "res/settings/settings.json"
+        ))
+
+    def validate_settings(self, data: dict) -> dict:
+        """
+        sigh... to what extends a programmer must go just to protect the user from themselves...
+        """
+        if not isinstance(data, dict):
+            raise ValueError("Settings file must contain a JSON object.")
+
+        validated = self.defaults_flat.copy()
+
+        for category in self.defaults.values():
+
+            for key, info in category.items():
+
+                connector, label, widget_type, options, default = info
+
+                # missing settings retain their defaults
+                if key not in data:
+                    continue
+
+                value = data[key]
+                if widget_type == "spinbox":
+                    if type(value) is not int:
+                        raise ValueError(
+                            f"'{key}' must be an integer, "
+                            f"got {type(value).__name__}."
+                        )
+                    if options and len(options) == 2:
+                        minimum, maximum = options
+                        if not minimum <= value <= maximum:
+                            raise ValueError(
+                                f"'{key}' must be between "
+                                f"{minimum} and {maximum}, got {value}."
+                            )
+                elif widget_type == "checkbox":
+                    if type(value) is not bool:
+                        raise ValueError(
+                            f"'{key}' must be a boolean, "
+                            f"got {type(value).__name__}."
+                        )
+                elif widget_type == "dropdown":
+                    if not isinstance(value, str):
+                        raise ValueError(
+                            f"'{key}' must be a string."
+                        )
+                    if value not in options:
+                        raise ValueError(
+                            f"'{key}' contains an unsupported option: "
+                            f"{value!r}."
+                        )
+                elif widget_type == "text":
+                    if not isinstance(value, str):
+                        raise ValueError(
+                            f"'{key}' must be a string."
+                        )
+                else:
+                    raise ValueError(
+                        f"Unknown widget type '{widget_type}' "
+                        f"for setting '{key}'."
+                    )
+                validated[key] = value
+        return validated
+
+    def load_settings(self) -> dict[str, Any]:
+        settings_path = self._get_path()
+        if not settings_path.is_file():
+            warning("No settings file found. Using default settings.")
+            return self.defaults_flat.copy()
+
+        try:
+            info(f"Loading settings from {settings_path}")
+
+            with settings_path.open("r", encoding="utf-8") as file:
+                stored = json.load(file)
+
+            validated = self.validate_settings(stored)
+
+            success("Settings successfully loaded and validated.")
+
+            return validated
+
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+
+            self.load_warning = (
+                f"The settings file could not be loaded because "
+                f"it contains invalid or corrupted data.\n\n"
+                f"Details: {exc}\n\n"
+                f"annaScript Studio will use the default settings "
+                f"instead. Your existing settings file has not "
+                f"been modified."
+            )
+
+            error(
+                f"Settings validation failed: {exc}. "
+                f"Falling back to defaults."
+            )
+
+            return self.defaults_flat.copy()
+
+    def show_load_warning(self, parent=None):
+        if not self.load_warning:
+            return
+
+        QMessageBox.warning(
+            parent,
+            "Invalid settings file",
+            self.load_warning
+        )
+
+        self.load_warning = None
+
+    def save_settings(self, settings: dict[str, Any]) -> bool:
+
+        settings_path = self._get_path()
+        temporary_path = settings_path.with_suffix(".json.tmp")
+
+        try:
+            # never save invalid settings either
+            validated = self.validate_settings(settings)
+
+            settings_path.parent.mkdir(
+                parents=True,
+                exist_ok=True
+            )
+
+            with temporary_path.open("w", encoding="utf-8") as file:
+                json.dump(
+                    validated,
+                    file,
+                    indent=4,
+                    ensure_ascii=False
+                )
+                file.write("\n")
+            temporary_path.replace(settings_path)
+            self.settings = validated
+            success(f"Settings saved to {settings_path}")
+            return True
+
+        except (OSError, TypeError, ValueError) as exc:
+            error(f"Failed to save settings: {exc}")
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError as cleanup_exc:
+                warning(
+                    f"Failed to remove temporary file: {cleanup_exc}"
+                )
+
+            return False
+
+    def get(self, key: str, fallback=None):
+        return self.settings.get(key, fallback)
+
+    def update(self, values: dict[str, Any]):
+        self.settings.update(values)
+
+    def reset(self) -> dict[str, Any]:
+        self.settings = self.defaults_flat.copy()
+        return self.settings.copy()
+
+
+settings_manager = SettingsManager(SETTINGS)
+settings = settings_manager.settings
+
+
+
 class SettingsDialog(QDialog):
-    def __init__(self, categories_config, callback_target=None, parent=None):
+    def __init__(
+        self,
+        categories_config,
+        callback_target=None,
+        parent=None
+    ):
         super().__init__(parent)
+
         self.setWindowTitle("Settings")
         self.resize(500, 400)
+
+        self.callback_target = callback_target
+        self.categories_config = categories_config
+        self.widgets = {}
+
+        self.working_settings = (
+            settings_manager.settings.copy()
+        )
+
         self.setStyleSheet("""
             QDialog, QWidget {
                 background-color: #2B2B2B;
                 color: #E0E0E0;
             }
+
             QTabWidget::panel {
                 border: 1px solid #3E3E3E;
                 background-color: #2B2B2B;
                 top: -1px;
             }
+
             QTabBar::tab {
                 background-color: #1E1E1E;
                 color: #A0A0A0;
@@ -326,18 +546,22 @@ class SettingsDialog(QDialog):
                 border-top-right-radius: 4px;
                 margin-right: 2px;
             }
+
             QTabBar::tab:selected {
                 background-color: #2B2B2B;
                 color: #FFFFFF;
                 border-bottom-color: #2B2B2B;
             }
+
             QTabBar::tab:hover {
                 background-color: #333333;
             }
+
             QLabel {
                 font-size: 13px;
                 color: #E0E0E0;
             }
+
             QLineEdit, QSpinBox, QComboBox {
                 background-color: #1E1E1E;
                 color: #FFFFFF;
@@ -345,24 +569,17 @@ class SettingsDialog(QDialog):
                 border: 1px solid #444444;
                 border-radius: 4px;
             }
+
             QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
                 border: 1px solid #8f0000;
             }
-            QSpinBox::up-button, QSpinBox::down-button {
-                background: #3C3C3C;
-                width: 16px;
-            }
-            QComboBox::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 15px;
-                border-left: 1px solid #444444;
-            }
+
             QCheckBox {
                 color: #E0E0E0;
                 font-size: 12px;
                 spacing: 6px;
             }
+
             QCheckBox::indicator {
                 width: 18px;
                 height: 18px;
@@ -370,10 +587,12 @@ class SettingsDialog(QDialog):
                 border-radius: 3px;
                 background-color: #1E1E1E;
             }
+
             QCheckBox::indicator:checked {
                 background-color: #b83b3b;
                 border-color: #8f0000;
             }
+
             QPushButton {
                 background-color: #3C3C3C;
                 color: white;
@@ -382,79 +601,108 @@ class SettingsDialog(QDialog):
                 border-radius: 4px;
                 font-size: 12px;
             }
+
             QPushButton:hover {
                 background-color: #4E4E4E;
                 border-color: #666666;
             }
+
             QPushButton:pressed {
                 background-color: #b83b3b;
                 border-color: #8f0000;
             }
         """)
-        
-        self.callback_target = callback_target
-        self.widgets = {}
-        
+
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(12, 12, 12, 12)
-        
+
         self.tab_widget = QTabWidget()
         self.main_layout.addWidget(self.tab_widget)
-        
+
         for category_name, settings_dict in categories_config.items():
             tab_page = QWidget()
             tab_layout = QFormLayout(tab_page)
-            tab_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
-            tab_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-            
+
+            tab_layout.setLabelAlignment(
+                Qt.AlignmentFlag.AlignRight
+            )
+
+            tab_layout.setFormAlignment(
+                Qt.AlignmentFlag.AlignLeft |
+                Qt.AlignmentFlag.AlignTop
+            )
+
             self._build_fields(settings_dict, tab_layout)
             self.tab_widget.addTab(tab_page, category_name)
-        
+
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.HLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("border-top: 1px solid #3E3E3E; margin: 5px 0;")
+
         self.main_layout.addWidget(separator)
-        
+
         btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-        
+
+        self.reset_btn = QPushButton("Reset to defaults")
         self.cancel_btn = QPushButton("Cancel")
         self.save_btn = QPushButton("Save")
-        
+
+        self.reset_btn.clicked.connect(self.reset_settings)
         self.cancel_btn.clicked.connect(self.reject)
         self.save_btn.clicked.connect(self.handle_save)
-        
+
+        btn_layout.addWidget(self.reset_btn)
+        btn_layout.addStretch()
         btn_layout.addWidget(self.cancel_btn)
         btn_layout.addWidget(self.save_btn)
+
         self.main_layout.addLayout(btn_layout)
 
     def _build_fields(self, settings_dict, layout):
         for element_id, info in settings_dict.items():
             connector, label_name, widget_type, options, default_value = info
-            
+
+            value = self.working_settings.get(
+                element_id,
+                default_value
+            )
+
             if widget_type == "spinbox":
                 widget = QSpinBox()
+
                 if options and len(options) == 2:
                     widget.setRange(options[0], options[1])
-                widget.setValue(default_value)
-                if connector: widget.valueChanged.connect(connector)
-                    
+
+                widget.setValue(value)
+
+                if connector:
+                    widget.valueChanged.connect(connector)
+
             elif widget_type == "checkbox":
                 widget = QCheckBox()
-                widget.setChecked(default_value)
-                if connector: widget.toggled.connect(connector)
-                    
+                widget.setChecked(value)
+
+                if connector:
+                    widget.toggled.connect(connector)
+
             elif widget_type == "dropdown":
                 widget = QComboBox()
-                if isinstance(options, list): widget.addItems(options)
-                widget.setCurrentText(str(default_value))
-                if connector: widget.currentTextChanged.connect(connector)
-                    
+
+                if isinstance(options, list):
+                    widget.addItems(options)
+
+                widget.setCurrentText(str(value))
+
+                if connector:
+                    widget.currentTextChanged.connect(connector)
+
             elif widget_type == "text":
                 widget = QLineEdit()
-                widget.setText(str(default_value))
-                if connector: widget.textChanged.connect(connector)
+                widget.setText(str(value))
+
+                if connector:
+                    widget.textChanged.connect(connector)
+
             else:
                 continue
 
@@ -463,74 +711,93 @@ class SettingsDialog(QDialog):
 
     def get_values(self):
         results = {}
+
         for element_id, widget in self.widgets.items():
-            if isinstance(widget, QSpinBox): results[element_id] = widget.value()
-            elif isinstance(widget, QCheckBox): results[element_id] = widget.isChecked()
-            elif isinstance(widget, QComboBox): results[element_id] = widget.currentText()
-            elif isinstance(widget, QLineEdit): results[element_id] = widget.text()
+
+            if isinstance(widget, QSpinBox):
+                results[element_id] = widget.value()
+
+            elif isinstance(widget, QCheckBox):
+                results[element_id] = widget.isChecked()
+
+            elif isinstance(widget, QComboBox):
+                results[element_id] = widget.currentText()
+
+            elif isinstance(widget, QLineEdit):
+                results[element_id] = widget.text()
         return results
+
+    def reset_settings(self):
+
+        answer = QMessageBox.question(
+            self,
+            "Reset settings",
+            "Are you sure you want to restore all settings "
+            "to their default values?",
+            QMessageBox.StandardButton.Yes |
+            QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+
+        defaults = settings_manager.defaults_flat
+
+        for element_id, widget in self.widgets.items():
+
+            value = defaults[element_id]
+
+            if isinstance(widget, QSpinBox):
+                widget.setValue(value)
+
+            elif isinstance(widget, QCheckBox):
+                widget.setChecked(value)
+
+            elif isinstance(widget, QComboBox):
+                widget.setCurrentText(str(value))
+
+            elif isinstance(widget, QLineEdit):
+                widget.setText(str(value))
+
+        self.working_settings = defaults.copy()
+
+        info("Settings restored to defaults (not yet saved).")
 
     def handle_save(self):
         settings_data = self.get_values()
-        
-        if self.callback_target and hasattr(self.callback_target, "apply_settings"):
+
+        if not settings_manager.save_settings(settings_data):
+            QMessageBox.critical(
+                self,
+                "Settings error",
+                "Settings could not be saved. "
+                "Your previous settings have been retained."
+            )
+            return
+
+        self.working_settings = settings_data.copy()
+
+        if self.callback_target and hasattr(
+            self.callback_target,
+            "apply_settings"
+        ):
             self.callback_target.apply_settings(settings_data)
-        else:
-            # if this happens something went very wrong...
-            error("SettingsDialog: Missing runtime target connection, printing dataset...")
-            debug(settings_data)
-            
+
         self.accept()
 
-    def save_settings(settings: dict[str, Any]) -> None:
-        settings_path = Path(resource_path("res/settings/settings.json"))
-        settings_path.parent.mkdir(parents=True, exist_ok=True)
-        temporary_path = settings_path.with_suffix(".json.tmp")
-        
-        try:
-            info(f"Attempting to save settings to {temporary_path}")
-            with temporary_path.open("w", encoding="utf-8") as file:
-                json.dump(settings, file, indent=4, ensure_ascii=False)
-                file.write("\n")
-            temporary_path.replace(settings_path)
-            success(f"Settings successfully saved to {settings_path}")
-        except (OSError, TypeError, ValueError) as exc:
-            error(f"Failed to save settings to {settings_path}: {exc}")
-            try:
-                temporary_path.unlink(missing_ok=True)
-            except OSError as cleanup_exc:
-                warning(f"Failed to remove temporary file {temporary_path}: {cleanup_exc}")
+# Editor
+# font_size = settings_manager.get("font-size")
 
-    def load_settings() -> dict[str, Any]:
-        settings_path = Path(resource_path("res/settings/settings.json"))
-        if not settings_path.is_file():
-            info(f"No settings file found at {settings_path}. Returning default empty settings.")
-            return {}
-            
-        try:
-            info(f"Loading settings from {settings_path}")
-            with settings_path.open("r", encoding="utf-8") as file:
-                settings = json.load(file)
-                
-            if not isinstance(settings, dict):
-                error(f"Settings file must contain a JSON object, but got {type(settings).__name__}: {settings_path}")
-                return {}
-                
-            success(f"Settings successfully loaded from {settings_path}")
-            return settings
-            
-        except json.JSONDecodeError as exc:
-            error(f"Invalid JSON in settings file {settings_path}: {exc}")
-            return {}
-        except OSError as exc:
-            error(f"Failed to read settings file {settings_path}: {exc}")
-            return {}
+# Rendering engine
+# disable_realtime = settings_manager.get("disable-realtime")
 
-    # settings = load_settings()
+# Spell checker
+# spellcheck_enabled = settings_manager.get("enable-spellcheck")
+# language = settings_manager.get("spellcheck-language")
 
-    # author_name = settings.get("author-name", "")
-    # font_size = settings.get("font-size", 14)
-
+# Theme manager
+# theme = settings_manager.get("default-theme")
 
 
 class FindReplaceDialog(QDialog):
@@ -1452,6 +1719,228 @@ class RibbonMenu(QWidget):
 
         return tab
     
+class SpellBlockData(QTextBlockUserData):
+    def __init__(self, errors):
+        super().__init__()
+        self.errors = errors
+
+
+class SpellChecker:
+    # German, you suck (for spell checking). 
+    # Best wishes, an Austrian programmer.
+
+    # donaudampfschifffahrtsgesellschaft
+    COMPOUND_LANGUAGES = {"de"}
+    LINKING_ELEMENTS = ("", "s", "es", "n", "en", "e", "er", "ens")
+    MIN_PART = 3
+    MAX_PARTS = 4
+
+    WORD_PATTERN = re.compile(r"(?<!\w)[^\W\d_]+(?:['’][^\W\d_]+)*(?!\w)")
+    SKIP_PATTERN = re.compile(
+        r"^@[A-Za-z0-9_]+\s*:.*$"
+        r"|//.*$"
+        r"|`[^`]*`"
+        r"|(?<=\])\([^)]*\)"
+        r"|(?<!\w)\\[A-Za-z]+(?:\{[^}]*\})*"
+        r"|\w+://\S+",
+        re.MULTILINE
+    )
+
+    def __init__(self):
+        self.enabled = False
+        self.code = None
+        self.sym = None
+        self.words = {}
+        self.session_ignored = set()
+        self.user_words = set()
+        self.user_path = resource_path(USER_DICTIONARY_PATH)
+        self._user_mtime = -1
+
+    @staticmethod
+    def _normalize(word):
+        return word.replace("’", "'").lower()
+
+    @staticmethod
+    def _match_case(original, term):
+        if len(original) > 1 and original.isupper():
+            return term.upper()
+        if original[:1].isupper():
+            return term[:1].upper() + term[1:]
+        return term
+
+    def configure(self, enabled, language):
+        code = SPELLCHECK_LANGUAGES.get(language, "en")
+        if enabled and (self.sym is None or code != self.code):
+            self._load(code)
+        self.enabled = bool(enabled) and self.sym is not None
+        self.refresh_user_words(force=True)
+
+    def _load(self, code):
+        info(f"Loading spell check dictionary: {code.upper()}")
+        path = resource_path(f"res/dicts/{code}.txt")
+        sym = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
+        try:
+            loaded = sym.load_dictionary(
+                path, term_index=0, count_index=1,
+                separator=" ", encoding="utf-8"
+            )
+        except (OSError, ValueError) as exc:
+            error(f"Spell check dictionary '{path}' failed to load: {exc}")
+            loaded = False
+
+        if not loaded:
+            warning(f"Spell checking unavailable: no usable dictionary at {path}")
+            self.sym = None
+            self.code = None
+            self.words = {}
+            return
+
+        self.sym = sym
+        self.code = code
+        self.words = sym.words
+        success(f"Spell check dictionary loaded: {code.upper()}")
+
+    def refresh_user_words(self, force=False):
+        try:
+            mtime = os.stat(self.user_path).st_mtime_ns
+        except OSError:
+            mtime = None
+
+        if not force and mtime == self._user_mtime:
+            return
+
+        self._user_mtime = mtime
+        if mtime is None:
+            self.user_words = set()
+            return
+
+        try:
+            with open(self.user_path, "r", encoding="utf-8") as file:
+                self.user_words = {
+                    self._normalize(line.strip())
+                    for line in file if line.strip()
+                }
+        except OSError as exc:
+            warning(f"Could not read user dictionary: {exc}")
+
+    def _is_compound(self, word):
+        if self.code not in self.COMPOUND_LANGUAGES:
+            return False
+        if len(word) < 2 * self.MIN_PART:
+            return False
+        return self._split(word, 0, self.MAX_PARTS)
+
+    def _split(self, word, start, parts_left):
+        rest = word[start:]
+        if start > 0 and len(rest) >= self.MIN_PART and self._known(rest):
+            return True
+        if parts_left <= 1:
+            return False
+
+        for end in range(start + self.MIN_PART, len(word) - self.MIN_PART + 1):
+            chunk = word[start:end]
+            for link in self.LINKING_ELEMENTS:
+                if link and not chunk.endswith(link):
+                    continue
+                stem = chunk[:len(chunk) - len(link)]
+                if (
+                    len(stem) >= self.MIN_PART
+                    and self._known(stem)
+                    and self._split(word, end, parts_left - 1)
+                ):
+                    return True
+        return False
+
+    def is_known(self, word):
+        normalized = self._normalize(word)
+        if self._known(normalized):
+            return True
+        if "'" in normalized:
+            return all(
+                len(part) <= 2 or self._known(part)
+                for part in normalized.split("'")
+            )
+        return self._is_compound(normalized)
+
+    def _known(self, word):
+        return (
+            word in self.words
+            or word in self.user_words
+            or word in self.session_ignored
+        )
+
+    def find_errors(self, text):
+        if not self.enabled or self.sym is None:
+            return []
+
+        skipped = [m.span() for m in self.SKIP_PATTERN.finditer(text)]
+        errors = []
+
+        for match in self.WORD_PATTERN.finditer(text):
+            start, end = match.span()
+            word = match.group()
+
+            if len(word) < 2 or word.isupper():
+                continue
+            if any(a < end and start < b for a, b in skipped):
+                continue
+            if self.is_known(word):
+                continue
+
+            errors.append((start, end))
+
+        return errors
+
+    def suggestions(self, word, limit=6):
+        if self.sym is None:
+            return []
+
+        items = self.sym.lookup(
+            self._normalize(word),
+            Verbosity.CLOSEST,
+            max_edit_distance=2,
+            include_unknown=False
+        )
+
+        result = []
+        for item in items:
+            term = self._match_case(word, item.term)
+            if term not in result:
+                result.append(term)
+            if len(result) >= limit:
+                break
+        return result
+
+    def ignore_all(self, word):
+        self.session_ignored.add(self._normalize(word))
+
+    def add_to_dictionary(self, word):
+        normalized = self._normalize(word)
+        self.refresh_user_words()
+        if normalized in self.user_words:
+            return True
+
+        self.user_words.add(normalized)
+        temporary_path = self.user_path + ".tmp"
+
+        try:
+            os.makedirs(os.path.dirname(self.user_path), exist_ok=True)
+            with open(temporary_path, "w", encoding="utf-8") as file:
+                file.write("\n".join(sorted(self.user_words)) + "\n")
+            os.replace(temporary_path, self.user_path)
+            self._user_mtime = os.stat(self.user_path).st_mtime_ns
+            return True
+        except OSError as exc:
+            error(f"Could not save user dictionary: {exc}")
+            self.user_words.discard(normalized)
+            return False
+
+
+spell_checker = SpellChecker()
+spell_checker.configure(
+    settings_manager.get("enable-spellcheck"),
+    settings_manager.get("spellcheck-language")
+)
 
 class AScriptHighlighter(QSyntaxHighlighter):
     def __init__(self, document):
@@ -1538,7 +2027,40 @@ class AScriptHighlighter(QSyntaxHighlighter):
         self.rules.append((re.compile(r"^\|(\s*[-A-Za-z0-9 ]+\s*\|)+$"), self.formats["table_header"]))
         self.rules.append((re.compile(r"^\|.*\|$"), self.formats["table_value"]))
 
+        self.ignored_once = []
+        self.spell_color = QColor("#FF5555")
+
     def highlightBlock(self, text):
+        self._highlight_syntax(text)
+
+        errors = []
+        if spell_checker.enabled and self.currentBlockState() not in (1, 2):
+            spell_checker.refresh_user_words()
+            base = self.currentBlock().position()
+
+            for start, end in spell_checker.find_errors(text):
+                if self._is_ignored_once(base + start, base + end):
+                    continue
+
+                errors.append((start, end))
+                for i in range(start, end):
+                    char_format = self.format(i)
+                    char_format.setUnderlineStyle(
+                        QTextCharFormat.UnderlineStyle.DotLine
+                    )
+                    char_format.setUnderlineColor(self.spell_color)
+                    self.setFormat(i, 1, char_format)
+
+        self.setCurrentBlockUserData(SpellBlockData(errors))
+
+    def _is_ignored_once(self, start, end):
+        self.ignored_once = [c for c in self.ignored_once if c.hasSelection()]
+        return any(
+            c.selectionStart() == start and c.selectionEnd() == end
+            for c in self.ignored_once
+        )
+
+    def _highlight_syntax(self, text):
         prev_state = self.previousBlockState()
         in_macro = (prev_state == 1)
         in_code = (prev_state == 2)
@@ -1591,29 +2113,29 @@ class AScriptHighlighter(QSyntaxHighlighter):
 
 
 # Editor
+
 class AScriptEditor(QPlainTextEdit):
+
     TAB = " " * 4
 
     def __init__(self):
         super().__init__()
-        
+
         font_path = resource_path("fonts/JetBrainsMono.ttf")
         font_id = QFontDatabase.addApplicationFont(font_path)
-        
+
         if font_id != -1:
             font_families = QFontDatabase.applicationFontFamilies(font_id)
             font_family = font_families[0] if font_families else "JetBrains Mono"
         else:
             font_family = "JetBrains Mono"
 
-        editor_font = QFont(font_family, 12)
-        
-        # qt magic to improve font rendering
-        editor_font.setStyleStrategy(QFont.StyleStrategy.PreferQuality)
-        editor_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+        self.font_family = font_family
 
-        self.setFont(editor_font)
-        
+        self.update_font_size(
+            settings_manager.get("font-size", 14)
+        )
+
         self.setStyleSheet("""
             QPlainTextEdit {
                 background: #1e1e1e;
@@ -1622,6 +2144,115 @@ class AScriptEditor(QPlainTextEdit):
                 padding: 6px;
             }
         """)
+
+    highlighter = None
+
+    def _spelling_error_at(self, point):
+        if not spell_checker.enabled:
+            return None
+
+        cursor = self.cursorForPosition(point)
+        block = cursor.block()
+        data = block.userData()
+        if not isinstance(data, SpellBlockData):
+            return None
+
+        column = cursor.positionInBlock()
+        for start, end in data.errors:
+            if start <= column <= end:
+                return block, start, end
+        return None
+
+    def _span_cursor(self, start, end):
+        cursor = QTextCursor(self.document())
+        cursor.setPosition(start)
+        cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+        return cursor
+
+    def _replace_range(self, start, end, text):
+        self._span_cursor(start, end).insertText(text)
+
+    def _ignore_once(self, block, start, end):
+        cursor = self._span_cursor(
+            block.position() + start, block.position() + end
+        )
+        cursor.setKeepPositionOnInsert(True)
+        self.highlighter.ignored_once.append(cursor)
+        self.highlighter.rehighlightBlock(block)
+
+    def _ignore_all(self, word):
+        spell_checker.ignore_all(word)
+        self.highlighter.rehighlight()
+
+    def _add_to_dictionary(self, word):
+        if spell_checker.add_to_dictionary(word):
+            self.highlighter.rehighlight()
+
+    def contextMenuEvent(self, event):
+        hit = self._spelling_error_at(event.pos())
+        if hit is None:
+            super().contextMenuEvent(event)
+            return
+
+        block, start, end = hit
+        base = block.position()
+        word = block.text()[start:end]
+
+        menu = self.createStandardContextMenu()
+        anchor = menu.actions()[0]
+
+        suggestions = spell_checker.suggestions(word)
+        if suggestions:
+            for suggestion in suggestions:
+                action = QAction(suggestion, menu)
+                font = action.font()
+                font.setBold(True)
+                action.setFont(font)
+                action.triggered.connect(
+                    lambda _=False, s=suggestion: self._replace_range(
+                        base + start, base + end, s
+                    )
+                )
+                menu.insertAction(anchor, action)
+        else:
+            action = QAction("No suggestions", menu)
+            action.setEnabled(False)
+            menu.insertAction(anchor, action)
+
+        menu.insertSeparator(anchor)
+
+        ignore = QAction("Ignore", menu)
+        ignore.triggered.connect(
+            lambda _=False: self._ignore_once(block, start, end)
+        )
+        menu.insertAction(anchor, ignore)
+
+        ignore_all = QAction("Ignore All", menu)
+        ignore_all.triggered.connect(lambda _=False: self._ignore_all(word))
+        menu.insertAction(anchor, ignore_all)
+
+        add = QAction("Add to dictionary", menu)
+        add.triggered.connect(lambda _=False: self._add_to_dictionary(word))
+        menu.insertAction(anchor, add)
+
+        menu.insertSeparator(anchor)
+
+        menu.exec(event.globalPos())
+        menu.deleteLater()
+
+    def update_font_size(self, size: int):
+        editor_font = QFont(self.font_family, size)
+
+        editor_font.setStyleStrategy(
+            QFont.StyleStrategy.PreferQuality
+        )
+
+        editor_font.setHintingPreference(
+            QFont.HintingPreference.PreferNoHinting
+        )
+
+        self.setFont(editor_font)
+
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -2463,11 +3094,14 @@ class MainWindow(QMainWindow):
 
         self.editor = AScriptEditor()
         self.highlighter = AScriptHighlighter(self.editor.document())
+        self.editor.highlighter = self.highlighter
 
         self.preview = QWebEngineView()
         self.preview.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.page = CustomWebEnginePage(self.preview)
         self.preview.setPage(self.page)
+
+        settings_manager.show_load_warning(self) # in case someone had fun with settings.json
 
         splitter.addWidget(self.editor)
         splitter.addWidget(self.preview)
@@ -2768,8 +3402,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence("Ctrl+E"), self, activated=self.export_file)
             QShortcut(QKeySequence("Ctrl+Shift+E"), self, activated=self.export_file_to_pdf)
 
-            # temp, no one should accidentally hit this
-            QShortcut(QKeySequence("Ctrl+Alt+Space"), self, activated=self.open_settings)
+            QShortcut(QKeySequence("Ctrl+Space"), self, activated=self.open_settings)
 
     def insert_text(self, text):
         cursor = self.editor.textCursor()
@@ -2813,21 +3446,21 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"{base} – {name}")
 
     def open_settings(self):
-        # testing in production, what could go wrong...
-        msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("Settings Window")
-        msg.setText("This window is only a placeholder.")
-        msg.setInformativeText("This window currently serves no purpose, your changes will not be saved.")
-        msg.addButton("Continue", QMessageBox.AcceptRole)
-        msg.exec()
-    
         dialog = SettingsDialog(SETTINGS, callback_target=self, parent=self)
         dialog.exec()
 
     def apply_settings(self, settings_dict):
-        SettingsDialog.save_settings(settings_dict)
-        debug(f"Received clean settings data in Main App: {settings_dict}")
+        settings_manager.save_settings(settings_dict)
+        self.editor.update_font_size(
+            settings_dict["font-size"]
+        )
+        spell_checker.configure(
+            settings_dict["enable-spellcheck"],
+            settings_dict["spellcheck-language"]
+        )
+        self.highlighter.rehighlight()
+        success("Application settings successfully applied.")
+
 
     def maybe_save(self) -> bool:
             if not self.document_modified:
@@ -3448,7 +4081,7 @@ class MainWindow(QMainWindow):
 
         <hr>
 
-        <p>The following part of the license <b>only</b> applies to <i>annaScript Studio</i> (The GUI editor):</p>
+        <p>The following parts of the license <b>only</b> apply to <i>annaScript Studio</i> (The GUI editor):</p>
 
         <h2>Note on Third-Party Libraries</h2>
         <p>This application ("annaScript Studio") uses <b>PySide6</b> (Qt for Python) for its GUI framework. 
@@ -3459,9 +4092,47 @@ class MainWindow(QMainWindow):
 
         <hr>
 
-        <p>Lucide Icons License:</p>
+        <h2>Spell-Check Dictionary Data Attribution</h2>
 
-        <h2>ISC License</h2>
+        <p>This application utilizes word frequency data derived from the 
+        <a href="https://storage.googleapis.com/books/ngrams/books/datasetsv3.html">Google Books Ngram Viewer</a> dataset, 
+        which is licensed under the <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported License</a>.</p>
+        <p>The original dataset has been filtered and modified to compile the dictionary for this spell-checking tool.</p>
+
+        <hr>
+
+        <h2>SymSpellPy license</h2>
+
+        <p>MIT License</p>
+
+        <p>Copyright (c) 2025 <b>mmb L (Python port https://github.com/mammothb/symspellpy)</b></p>
+        
+        <p>Copyright (c) 2021 <b>Wolf Garbe (Original C# implementation https://github.com/wolfgarbe/SymSpell)</b></p>
+
+        <p>Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:</p>
+
+        <p>The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.</p>
+
+        <p style="font-family: monospace; color: #A0A0A0; font-size: 11px;">
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.</p>
+
+        <hr>
+
+        <h2>Lucide Icons License</h2>
+
+        <p>ISC License</p>
         <p>Copyright (c) 2026 Lucide Icons and Contributors</p>
         
         <p>Permission to use, copy, modify, and/or distribute this software for any purpose with or 
@@ -3486,7 +4157,7 @@ class MainWindow(QMainWindow):
         smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x,
         zoom-in, zoom-out</i></p>
 
-        <h2>The MIT License (MIT) (for the icons listed above)</h2>
+        <p><b>The MIT License (MIT) (for the icons listed above)</b></p>
 
         <p>Copyright (c) 2013-present Cole Bemis</p>
 
