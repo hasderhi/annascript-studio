@@ -45,6 +45,16 @@ from PySide6.QtWidgets import (
     QFormLayout, QSpinBox, QComboBox, QTextBrowser
 )
 
+from logger import (
+    debug,
+    success,
+    info,
+    warning,
+    error,
+    title,
+    website
+)
+
 
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
@@ -53,8 +63,128 @@ def resource_path(relative_path: str) -> str:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+# Constants
+CURRENT_VERSION = "v1.3.0"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
+
+# change these if you've forked the repo
+REPO_OWNER = "hasderhi"
+REPO_NAME = "annascript-studio"
+
+# needed to prevent the preview from opening web links internally
+WEB_DOMAIN_REGEX = re.compile(
+    r'(?:^|/|//)([a-z0-9]+([\-.][a-z0-9]+)*\.[a-z]{2,})(?::[0-9]+)?(?:/.*)?$', 
+    re.IGNORECASE
+)
+
+title(CURRENT_VERSION)
+website()
+
+# allowed extensions, everything else will not be opened by the preview.
+# this is only a draft, will revisit it when the asset logic is implemented.
+LOCAL_ASSET_EXTENSIONS = {
+    '.html', '.htm', '.xhtml', '.xml', '.json', '.js', '.css',
+    '.txt', '.md', '.pdf', '.csv', '.tsv',
+    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
+    '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
+    '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
+}
+
+SPELLCHECK_LANGUAGES = {
+    "English": "en",
+    "Deutsch": "de",
+    "Español": "es",
+    "Français": "fr",
+    "Italiano": "it",
+}
+USER_DICTIONARY_PATH = "res/dicts/user.txt"
+
+ICON_MAPPING = {
+    "Compile Now": "play.png",
+    "Update Preview": "refresh.png",
+
+    "Save": "save.png",
+    "Save as": "file-symlink.png",
+    "Open": "folder-open.png",
+    "New": "file-plus.png",
+    
+    "Undo": "undo-2.png",
+    "Redo": "redo-2.png",
+    "Find": "search.png",
+    "Find and Replace": "replace.png",
+    
+    "Cut": "scissors.png",
+    "Copy": "copy.png",
+    "Paste": "clipboard.png",
+    "Select All": "mouse-pointer-click.png",
+    
+    "Bold": "bold.png",
+    "Italic": "italic.png",
+    "Underline": "underline.png",
+    "Super": "superscript.png",
+    "Sub": "subscript.png",
+    "Center": "align-center.png",
+    "Bold and Italic": "type.png",
+    "Marker": "flag.png",
+    "Highlight": "highlighter.png",
+    "Comment": "message-square.png",
+    "Code": "code.png",
+    "Code Block": "code.png",
+
+    "Title": "type.png",
+    "Heading": "heading.png",
+    "Box": "box.png",
+    "Box Warning": "alert-triangle.png",
+    "Box Danger": "alert-octagon.png",
+    "Box Info": "info.png",
+    "Note": "sticky-note.png",
+    "Table": "table.png",
+    "Pie Chart": "pie-chart.png",
+    "Bar Chart": "bar-chart.png",
+    "Root": "radical.png",
+    "Fraction": "divide.png",
+    "Definition": "book-open.png",
+    "Coordinates": "move-3d.png",
+
+    "Access Dictionaries": "book-marked.png",
+    "Open Dictionary Source": "globe.png",
+    
+    "Export File": "file-down.png",
+    "Export File as PDF": "file-text.png",
+    "Print": "printer.png",
+    "Copy HTML": "file-code.png",
+
+    "Cleanup temporary directories": "trash-2.png",
+    "Open application directory": "folder-archive.png",
+    "Open temporary directory": "folder-clock.png",
+    "Open themes directory": "palette.png",
+    "Settings": "settings.png",
+    "Show welcome page": "smile.png",
+
+    "Report a Bug": "bug.png",
+    "GitHub": "folder-git-2.png",
+    "About this Application": "circle-question-mark.png",
+    "License": "scale.png",
+    "Reference && Manual": "book-marked.png",
+    "Developer Website": "globe.png",
+    "Developer GitHub": "git-branch.png",
+    "Latest Release": "gift.png"
+}
+
+DEFAULT_PATH = f"{QDir.homePath()}/Documents"
+
+GUIDE_CSS = """
+    body { color: #D4D4D4; font-size: 13px; }
+    h1 { color: #FFFFFF; font-size: 20px; }
+    h2 { color: #FFFFFF; font-size: 16px; margin-top: 18px; }
+    a { color: #b83b3b; }
+    code { background-color: #2D2D2D; color: #E0E0E0; font-family: Consolas, monospace; }
+    pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
+    th { background-color: #2D2D2D; color: #FFFFFF; }
+"""
+
 class SplashScreen(QWidget):
-    SIZE = 340
+    SIZE = 400
     RADIUS = 28
     ICON_SIZE = 96
 
@@ -168,7 +298,7 @@ def splash_close():
 QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 app = QApplication.instance() or QApplication(sys.argv)
 app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
-_splash = SplashScreen(resource_path("res/annascriptstudio.png"), "annaScript Studio")
+_splash = SplashScreen(resource_path("res/annascriptstudio.png"), f"annaScript Studio {CURRENT_VERSION}")
 _splash.show()
 
 
@@ -191,16 +321,6 @@ from compiler_api import (
     BASE_DIR,
     THEMES_SRC
 )
-from logger import (
-    debug,
-    success,
-    info,
-    warning,
-    error,
-    title,
-    website
-)
-
 # why is this up here?
 # because else I couldn't access the check-for-updates setting on startup
 # very suboptimal ik
@@ -215,9 +335,9 @@ SETTINGS = {
         "enable-spellcheck": (None, "Enable spell checking", "checkbox", None, False),
         "spellcheck-language": (None, "Language", "dropdown", ["English", "Deutsch", "Español", "Français", "Italiano"], "English"),
     },
-    # "Rendering": {
-    #     "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
-    # },
+    "Rendering": {
+        "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
+    },
     "View": {
         "font-size": (None, "Editor font size", "spinbox", [1, 200], 12),
     },
@@ -255,7 +375,7 @@ class SettingsManager:
 
     def validate_settings(self, data: dict) -> dict:
         """
-        sigh... to what extends a programmer must go just to protect the user from themselves...
+        sigh... to what extent a programmer must go just to protect the user from themselves...
         """
         if not isinstance(data, dict):
             raise ValueError("Settings file must contain a JSON object.")
@@ -419,116 +539,7 @@ settings = settings_manager.settings
 
 do_not_check_for_updates = (settings_manager.get("update-check") == False)
 
-# Constants
-CURRENT_VERSION = "v1.3.0"
-CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
-
-# change these if you've forked the repo
-REPO_OWNER = "hasderhi"
-REPO_NAME = "annascript-studio"
-
-# needed to prevent the preview from opening web links internally
-WEB_DOMAIN_REGEX = re.compile(
-    r'(?:^|/|//)([a-z0-9]+([\-.][a-z0-9]+)*\.[a-z]{2,})(?::[0-9]+)?(?:/.*)?$', 
-    re.IGNORECASE
-)
-
-# allowed extensions, everything else will not be opened by the preview.
-# this is only a draft, will revisit it when the asset logic is implemented.
-LOCAL_ASSET_EXTENSIONS = {
-    '.html', '.htm', '.xhtml', '.xml', '.json', '.js', '.css',
-    '.txt', '.md', '.pdf', '.csv', '.tsv',
-    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
-    '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
-    '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
-}
-
-SPELLCHECK_LANGUAGES = {
-    "English": "en",
-    "Deutsch": "de",
-    "Español": "es",
-    "Français": "fr",
-    "Italiano": "it",
-}
-USER_DICTIONARY_PATH = "res/dicts/user.txt"
-
-ICON_MAPPING = {
-    "Save": "save.png",
-    "Save as": "file-symlink.png",
-    "Open": "folder-open.png",
-    "New": "file-plus.png",
-    
-    "Undo": "undo-2.png",
-    "Redo": "redo-2.png",
-    "Find": "search.png",
-    "Find and Replace": "replace.png",
-    
-    "Cut": "scissors.png",
-    "Copy": "copy.png",
-    "Paste": "clipboard.png",
-    "Select All": "mouse-pointer-click.png",
-    
-    "Bold": "bold.png",
-    "Italic": "italic.png",
-    "Underline": "underline.png",
-    "Super": "superscript.png",
-    "Sub": "subscript.png",
-    "Center": "align-center.png",
-    "Bold and Italic": "type.png",
-    "Marker": "flag.png",
-    "Highlight": "highlighter.png",
-    "Comment": "message-square.png",
-    "Code": "code.png",
-    "Code Block": "code.png",
-
-    "Title": "type.png",
-    "Heading": "heading.png",
-    "Box": "box.png",
-    "Box Warning": "alert-triangle.png",
-    "Box Danger": "alert-octagon.png",
-    "Box Info": "info.png",
-    "Note": "sticky-note.png",
-    "Table": "table.png",
-    "Pie Chart": "pie-chart.png",
-    "Bar Chart": "bar-chart.png",
-    "Root": "radical.png",
-    "Fraction": "divide.png",
-    "Definition": "book-open.png",
-    "Coordinates": "move-3d.png",
-    
-    "Export File": "file-down.png",
-    "Export File as PDF": "file-text.png",
-    "Print": "printer.png",
-    "Copy HTML": "file-code.png",
-
-    "Cleanup temporary directories": "trash-2.png",
-    "Open application directory": "folder-archive.png",
-    "Open temporary directory": "folder-clock.png",
-    "Open themes directory": "palette.png",
-    "Settings": "settings.png",
-    "Show welcome page": "smile.png",
-
-    "Report a Bug": "bug.png",
-    "GitHub": "folder-git-2.png",
-    "About this Application": "circle-question-mark.png",
-    "License": "scale.png",
-    "Reference && Manual": "book-marked.png",
-    "Developer Website": "globe.png",
-    "Developer GitHub": "git-branch.png",
-    "Latest Release": "gift.png"
-}
-
-DEFAULT_PATH = f"{QDir.homePath()}/Documents"
-
-GUIDE_CSS = """
-    body { color: #D4D4D4; font-size: 13px; }
-    h1 { color: #FFFFFF; font-size: 20px; }
-    h2 { color: #FFFFFF; font-size: 16px; margin-top: 18px; }
-    a { color: #b83b3b; }
-    code { background-color: #2D2D2D; color: #E0E0E0; font-family: Consolas, monospace; }
-    pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
-    th { background-color: #2D2D2D; color: #FFFFFF; }
-"""
+enable_realtime = (settings_manager.get("disable-realtime") == False)
 
 
 def _p(html):
@@ -550,8 +561,6 @@ def _table(rows, header=None):
 
 
 splash_status("Starting up...")
-title(CURRENT_VERSION)
-website()
 
 if sys.platform == "linux":
     warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
@@ -921,7 +930,7 @@ class SettingsDialog(QDialog):
 # font_size = settings_manager.get("font-size")
 
 # Rendering engine
-# disable_realtime = settings_manager.get("disable-realtime")
+# enable_realtime = settings_manager.get("disable-realtime")
 
 # Spell checker
 # spellcheck_enabled = settings_manager.get("enable-spellcheck")
@@ -1606,14 +1615,16 @@ class RibbonGroup(QWidget):
 
 
 class RibbonMenu(QWidget):
-    def __init__(self, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops, parent=None):
+    def __init__(self, compile_ops, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, review_ops, export_ops, debug_ops, help_ops, parent=None):
         super().__init__(parent)
 
+        self.compile_ops = compile_ops
         self.file_ops = file_ops
         self.edit_ops = edit_ops
         self.clipboard_ops = clipboard_ops
         self.font_ops = font_ops
         self.insert_ops = insert_ops
+        self.review_ops = review_ops
         self.export_ops = export_ops
         self.debug_ops = debug_ops
         self.help_ops = help_ops
@@ -1623,7 +1634,7 @@ class RibbonMenu(QWidget):
         layout.setSpacing(0)
 
         self.tab_bar = QTabBar()
-        for tab_name in ["Home", "Insert", "Export", "Advanced", "Help"]:
+        for tab_name in ["Home", "Insert", "Review", "Export", "Advanced", "Help"]:
             self.tab_bar.addTab(tab_name)
         self.tab_bar.setExpanding(False)
         self.tab_bar.setDrawBase(False)
@@ -1634,12 +1645,14 @@ class RibbonMenu(QWidget):
 
         self.home_tab = self.make_home_tab()
         self.insert_tab = self.make_insert_tab()
+        self.review_tab = self.make_review_tab()
         self.export_tab = self.make_export_tab()
         self.advanced_tab = self.make_advanced_tab()
         self.help_tab = self.make_help_tab()
 
         self.stack.addWidget(self.home_tab)
         self.stack.addWidget(self.insert_tab)
+        self.stack.addWidget(self.review_tab)
         self.stack.addWidget(self.export_tab)
         self.stack.addWidget(self.advanced_tab)
         self.stack.addWidget(self.help_tab)
@@ -1685,6 +1698,11 @@ class RibbonMenu(QWidget):
         layout.setContentsMargins(10, 10, 10, 8)
         layout.setSpacing(10)
 
+        compile_group = RibbonGroup("Compile", [
+            ["Compile Now"],
+            ["Update Preview"]
+        ])
+
         file_group = RibbonGroup("File", [
             ["Save", "Save as"],
             ["Open", "New"]
@@ -1701,6 +1719,9 @@ class RibbonMenu(QWidget):
             ["Bold", "Italic", "Underline", "Super", "Center", "Code"],
             ["Bold and Italic", "Marker", "Highlight", "Sub", "Comment", "Code Block"],
         ])
+
+        compile_group.buttons["Compile Now"].clicked.connect(self.compile_ops["compile"])
+        compile_group.buttons["Update Preview"].clicked.connect(self.compile_ops["update_preview"])
 
         file_group.buttons["Save"].clicked.connect(self.file_ops["save"])
         file_group.buttons["Save as"].clicked.connect(self.file_ops["save_as"])
@@ -1730,6 +1751,7 @@ class RibbonMenu(QWidget):
         font_group.buttons["Code"].clicked.connect(self.font_ops["code"])
         font_group.buttons["Code Block"].clicked.connect(self.font_ops["code_block"])
 
+        layout.addWidget(compile_group)
         layout.addWidget(file_group)
         layout.addWidget(edit_group)
         layout.addWidget(clipboard_group)
@@ -1767,6 +1789,30 @@ class RibbonMenu(QWidget):
 
         layout.addWidget(insert_group)
         layout.addStretch()
+        return tab
+
+
+    def make_review_tab(self):
+        tab = QWidget()
+        tab.setObjectName("RibbonContent")
+        layout = QHBoxLayout(tab)
+        layout.setContentsMargins(10, 10, 10, 8)
+        layout.setSpacing(10)
+
+        review_group = RibbonGroup("Review", [
+            ["Access Dictionaries"],
+            ["Open Dictionary Source"]
+        ])
+
+        layout.addWidget(review_group)
+        layout.addStretch()
+
+        def open_url(url):
+            webbrowser.open(url)
+
+        review_group.buttons["Access Dictionaries"].clicked.connect(self.review_ops["open_dicts"])
+        review_group.buttons["Open Dictionary Source"].clicked.connect(lambda: open_url("https://github.com/wolfgarbe/SymSpell/tree/master/SymSpell.FrequencyDictionary"))
+
         return tab
 
     def make_export_tab(self):
@@ -3215,7 +3261,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("annaScript Studio")
-        self.resize(1400, 900)
+        self.resize(1450, 900)
         self.setMinimumSize(900, 300)
 
         self.current_file = None
@@ -3243,9 +3289,14 @@ class MainWindow(QMainWindow):
         self.update_timer.setInterval(150)
         self.update_timer.setSingleShot(True)
         self.editor.textChanged.connect(lambda: self.update_timer.start())
-        self.update_timer.timeout.connect(self.update_preview)
+        self.update_timer.timeout.connect(self.compile_and_update_preview)
 
         self.editor.textChanged.connect(self.on_text_changed)
+
+        compile_ops = {
+            "compile": self.compile_and_update_preview_manually,
+            "update_preview": self.update_preview,
+        }
 
         file_ops = {
             "save": self.save_file,
@@ -3295,6 +3346,9 @@ class MainWindow(QMainWindow):
             "sqrt": lambda: self.apply_formatting("sqrt"),
             "frac": lambda: self.apply_formatting("frac"),
         }
+        review_ops = {
+            "open_dicts": self.open_dictdir,
+        }
         export_ops = {
             "export": self.export_file,
             "export_pdf": self.export_file_to_pdf,
@@ -3315,7 +3369,7 @@ class MainWindow(QMainWindow):
             "show_symbol_ref": self.show_symbol_ref,
         }
 
-        self.ribbon = RibbonMenu(file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, export_ops, debug_ops, help_ops)
+        self.ribbon = RibbonMenu(compile_ops, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, review_ops, export_ops, debug_ops, help_ops)
         self.setMenuWidget(self.ribbon)
 
         container = QWidget()
@@ -3326,7 +3380,7 @@ class MainWindow(QMainWindow):
 
         self.setup_shortcuts()
 
-        self.update_preview()
+        self.compile_and_update_preview()
 
         self.update_window_title()
 
@@ -3416,7 +3470,7 @@ class MainWindow(QMainWindow):
 
         <div class="welcome-card">
             <h2>Welcome to annaScript Studio {CURRENT_VERSION}!</h2>
-            <div class="subtitle">Begin typing in the editor or open a file to dismiss this screen.</div>
+            <div class="subtitle">{"Begin typing in the editor" if not settings_manager.get("disable-realtime") else "Press compile"} or open a file to dismiss this screen.</div>
             
             <p>
                 Ready to write? Start a new document in the editor or open an existing one with <kbd>CTRL-O</kbd>.
@@ -3510,12 +3564,13 @@ class MainWindow(QMainWindow):
             info("User chose to download update, opening browser and continuing with startup...")
 
     def setup_shortcuts(self):
+            QShortcut(QKeySequence("Ctrl+Return"), self, activated=self.compile_and_update_preview_manually)
             QShortcut(QKeySequence("Ctrl+N"), self, activated=self.new_file)
             QShortcut(QKeySequence("Ctrl+O"), self, activated=self.open_file)
             QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_file)
             QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self.save_file_as)
             QShortcut(QKeySequence("Ctrl+P"), self, activated=self.print_document)
-            QShortcut(QKeySequence("Ctrl+R"), self, activated=self.update_preview)
+            QShortcut(QKeySequence("Ctrl+R"), self, activated=self.compile_and_update_preview)
 
             QShortcut(QKeySequence("Ctrl+U"), self, activated=lambda: self.apply_formatting("underline"))
             QShortcut(QKeySequence("Ctrl+B"), self, activated=lambda: self.apply_formatting("bold"))
@@ -3582,6 +3637,7 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def apply_settings(self, settings_dict):
+        global enable_realtime # not ideal, but will do for now
         settings_manager.save_settings(settings_dict)
         self.editor.update_font_size(
             settings_dict["font-size"]
@@ -3591,6 +3647,7 @@ class MainWindow(QMainWindow):
             settings_dict["spellcheck-language"]
         )
         self.highlighter.rehighlight()
+        enable_realtime = (settings_manager.get("disable-realtime") == False)
         success("Application settings successfully applied.")
 
 
@@ -3973,7 +4030,131 @@ class MainWindow(QMainWindow):
             + f"\n\n{type(exc).__name__}: {exc}"
         )
 
-    def update_preview(self):
+    def compile_and_update_preview(self):
+        if enable_realtime:
+            source = self.editor.toPlainText()
+            cursor = self.editor.textCursor()
+
+            try:
+                out_path = render_to_tempfile(source, cursor)
+                self.last_preview_path = out_path
+                self.preview.setUrl(QUrl.fromLocalFile(out_path))
+
+            except Exception as e:
+                safe_tb = self.sanitize_traceback(e)
+                error_html = f"""
+                <html>
+                <head>
+                <style>
+                    body {{
+                        background-color: #1E1E1E;
+                        color: #D4D4D4;
+                        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+                        font-size: 13px;
+                        line-height: 1.5;
+                        padding: 20px;
+                        margin: 0;
+                    }}
+
+                    .error-card {{
+                        background-color: #252526;
+                        border-left: 4px solid #b83b3b;
+                        border-top: 1px solid #3E3E3E;
+                        border-right: 1px solid #3E3E3E;
+                        border-bottom: 1px solid #3E3E3E;
+                        border-radius: 4px;
+                        padding: 16px;
+                        margin-bottom: 16px;
+                    }}
+                    h2 {{
+                        color: #8f0000;
+                        font-size: 16px;
+                        font-weight: 600;
+                        margin-top: 0;
+                        margin-bottom: 10px;
+                    }}
+                    p {{
+                        margin-top: 0;
+                        margin-bottom: 12px;
+                        color: #CCCCCC;
+                    }}
+                    ul {{
+                        margin: 0 0 16px 0;
+                        padding-left: 20px;
+                        color: #B0B0B0;
+                    }}
+                    li {{
+                        margin-bottom: 6px;
+                    }}
+                    details {{
+                        background-color: #1A1A1A;
+                        border: 1px solid #2D2D2D;
+                        border-radius: 4px;
+                        margin-top: 12px;
+                    }}
+                    summary {{
+                        padding: 8px 12px;
+                        font-weight: 600;
+                        color: #E57373;
+                        cursor: pointer;
+                        outline: none;
+                        user-select: none;
+                    }}
+                    summary:hover {{
+                        color: #EF9A9A;
+                        background-color: #222222;
+                    }}
+                    pre {{
+                        background-color: #111111;
+                        padding: 12px;
+                        margin: 0;
+                        border-top: 1px solid #2D2D2D;
+                        color: #FF8A80;
+                        font-family: 'Consolas', 'Courier New', monospace;
+                        font-size: 12px;
+                        overflow-x: auto;
+                        white-space: pre-wrap; /* Wrap long tracebacks beautifully */
+                    }}
+                    .footer {{
+                        font-size: 11px;
+                        color: #858585;
+                        margin-top: 16px;
+                        border-top: 1px solid #2D2D2D;
+                        padding-top: 12px;
+                    }}
+                </style>
+                </head>
+                <body>
+                <div class="error-card">
+                    <h2>Compiler Error</h2>
+                    <p>The compiler stopped because it encountered invalid annaScript syntax.</p>
+                    
+                    <ul>
+                        <li>Check for missing brackets, macros, or keywords</li>
+                        <li>Make sure all macros are properly closed</li>
+                        <li>Verify indentation and nesting</li>
+                    </ul>
+
+                    <details>
+                        <summary>Show details</summary>
+                        <pre>{html.escape(safe_tb)}</pre>
+                    </details>
+                </div>
+
+                <div class="footer">
+                    If the error persists, contact the developer via <b>Help → Report a Bug</b>.
+                </div>
+
+                </body>
+                </html>
+                """
+                self.preview.setHtml(error_html)
+                if "NoneType" in str(e):
+                    error(f"Failed to compile: {e} (Likely caused by invalid macro syntax)")
+                else:
+                    error(f"Failed to compile: {e}")
+
+    def compile_and_update_preview_manually(self):
         source = self.editor.toPlainText()
         cursor = self.editor.textCursor()
 
@@ -4095,6 +4276,9 @@ class MainWindow(QMainWindow):
                 error(f"Failed to compile: {e} (Likely caused by invalid macro syntax)")
             else:
                 error(f"Failed to compile: {e}")
+
+    def update_preview(self):
+        self.preview.reload()
 
     def show_license(self):
         dlg = QDialog(self)
@@ -4451,6 +4635,9 @@ class MainWindow(QMainWindow):
 
     def open_basedir(self):
         open_file_or_dir(BASE_DIR)
+
+    def open_dictdir(self):
+        open_file_or_dir(f"{BASE_DIR}/res/dicts/")
 
     def closeEvent(self, event):
         if self.maybe_save():
