@@ -7,7 +7,6 @@ To change certain application functions, please check the constants below the im
 """
 
 
-# Imports
 import os
 import sys
 import re
@@ -17,37 +16,174 @@ import traceback
 import tempfile
 import webbrowser
 import subprocess
-import requests
 import datetime
-from packaging.version import Version
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEnginePage
-from PySide6.QtPrintSupport import QPrinter, QPrintDialog
+# sigh...
+if sys.platform == "linux":
+    os.environ["QT_QUICK_BACKEND"] = "software"
+    os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+
 from PySide6.QtCore import (
-    Qt, QTimer, QUrl, QDir, QRegularExpression, QSize, QMarginsF
+    Qt, QTimer, QUrl, QDir, QRegularExpression, QSize, QMarginsF,
+    QCoreApplication, QEventLoop, QRectF
 )
 from PySide6.QtGui import (
-    QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence, 
+    QFont, QTextCursor, QTextDocument, QShortcut, QKeySequence,
     QColor, QSyntaxHighlighter, QTextCharFormat, QIcon, QPixmap,
     QCursor, QAction, QGuiApplication, QDesktopServices, QFontDatabase,
-    QPainter, QPageLayout, QPageSize, QTextBlockUserData
-
+    QPainter, QPageLayout, QPageSize, QTextBlockUserData,
+    QPen, QFontMetrics
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPlainTextEdit,
     QHBoxLayout, QTabBar, QStackedWidget, QToolButton, QSizePolicy,
-    QLabel, QGridLayout, QSplitter, QFileDialog, QDialog, 
+    QLabel, QGridLayout, QSplitter, QFileDialog, QDialog,
     QLineEdit, QPushButton, QMessageBox, QTabWidget, QTableWidget,
     QTableWidgetItem, QMenu, QCheckBox, QFrame, QScrollArea,
-    QFormLayout, QLabel, QSpinBox, QComboBox, QTextBrowser
+    QFormLayout, QSpinBox, QComboBox, QTextBrowser
 )
+
+
+def resource_path(relative_path: str) -> str:
+    if hasattr(sys, "_MEIPASS"):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+class SplashScreen(QWidget):
+    SIZE = 340
+    RADIUS = 28
+    ICON_SIZE = 96
+
+    BG_COLOR = QColor("#2b2b2b")
+    BORDER_COLOR = QColor("#3c3c3c")
+    TITLE_COLOR = QColor("#ffffff")
+    STATUS_COLOR = QColor("#a0a0a0")
+
+    def __init__(self, icon_path: str, app_name: str):
+        super().__init__(
+            None,
+            Qt.WindowType.SplashScreen
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint,
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setFixedSize(self.SIZE, self.SIZE)
+
+        self._app_name = app_name
+        self._status = ""
+
+        screen = QGuiApplication.primaryScreen()
+        dpr = screen.devicePixelRatio()
+
+        pixmap = QPixmap(icon_path)
+
+        if not pixmap.isNull():
+            pixmap = pixmap.scaled(
+                int(self.ICON_SIZE * dpr), int(self.ICON_SIZE * dpr),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            pixmap.setDevicePixelRatio(dpr)
+
+        self._icon = pixmap
+
+        self._title_font = QFont()
+        self._title_font.setPointSize(20)
+        self._title_font.setBold(True)
+
+        self._status_font = QFont()
+        self._status_font.setPointSize(9)
+
+        self.move(screen.availableGeometry().center() - self.rect().center())
+
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        p.setPen(QPen(self.BORDER_COLOR, 1))
+        p.setBrush(self.BG_COLOR)
+        p.drawRoundedRect(
+            QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5),
+            self.RADIUS, self.RADIUS,
+        )
+
+        if not self._icon.isNull():
+            dpr = self._icon.devicePixelRatio()
+            w = self._icon.width() / dpr
+            h = self._icon.height() / dpr
+            x = int((self.width() - w) / 2)
+            y = int(64 + (self.ICON_SIZE - h) / 2)
+            p.drawPixmap(x, y, self._icon)
+
+        p.setFont(self._title_font)
+        p.setPen(self.TITLE_COLOR)
+        p.drawText(
+            QRectF(0, 182, self.width(), 36),
+            Qt.AlignmentFlag.AlignCenter, self._app_name,
+        )
+
+        p.setFont(self._status_font)
+        p.setPen(self.STATUS_COLOR)
+        text = QFontMetrics(self._status_font).elidedText(
+            self._status, Qt.TextElideMode.ElideRight, self.width() - 48
+        )
+        p.drawText(
+            QRectF(24, self.height() - 64, self.width() - 48, 20),
+            Qt.AlignmentFlag.AlignCenter, text,
+        )
+
+    def show(self):
+        super().show()
+        self.raise_()
+        QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+
+    def set_status(self, text: str):
+        self._status = text
+        self.repaint()
+        QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
+
+
+_splash = None
+
+
+def splash_status(text: str):
+    if _splash is not None and _splash.isVisible():
+        _splash.set_status(text)
+
+
+def splash_close():
+    global _splash
+    if _splash is not None:
+        _splash.close()
+        _splash.deleteLater()
+        _splash = None
+
+
+QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+app = QApplication.instance() or QApplication(sys.argv)
+app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
+_splash = SplashScreen(resource_path("res/annascriptstudio.png"), "annaScript Studio")
+_splash.show()
+
+
+# the heavy stuff
+splash_status("Loading libraries...")
+import requests
+from packaging.version import Version
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEnginePage
+from PySide6.QtPrintSupport import QPrinter, QPrintDialog
 from symspellpy import SymSpell, Verbosity
 
+splash_status("Loading compiler...")
 from compiler_api import (
-    render_to_tempfile, 
+    render_to_tempfile,
     cleanup_instance_directory,
     cleanup_force,
     export_standalone_html,
@@ -65,33 +201,9 @@ from logger import (
     website
 )
 
-
-# Constants
-DO_NOT_CHECK_FOR_UPDATES = False
-
-CURRENT_VERSION = "v1.3.0"
-CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
-
-# change these if you've forked the repo
-REPO_OWNER = "hasderhi"
-REPO_NAME = "annascript-studio"
-
-# needed to prevent the preview from opening web links internally
-WEB_DOMAIN_REGEX = re.compile(
-    r'(?:^|/|//)([a-z0-9]+([\-.][a-z0-9]+)*\.[a-z]{2,})(?::[0-9]+)?(?:/.*)?$', 
-    re.IGNORECASE
-)
-
-# allowed extensions, everything else will not be opened by the preview.
-# this is only a draft, will revisit it when the asset logic is implemented.
-LOCAL_ASSET_EXTENSIONS = {
-    '.html', '.htm', '.xhtml', '.xml', '.json', '.js', '.css',
-    '.txt', '.md', '.pdf', '.csv', '.tsv',
-    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
-    '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
-    '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
-}
-
+# why is this up here?
+# because else I couldn't access the check-for-updates setting on startup
+# very suboptimal ik
 SETTINGS = {
     "General": {
         # "author-name": (None, "Default author name", "text", None, ""),
@@ -109,212 +221,13 @@ SETTINGS = {
     "View": {
         "font-size": (None, "Editor font size", "spinbox", [1, 200], 12),
     },
-    # "Advanced": {
-    #     "update-check": (None, "Check for updates", "checkbox", None, True),
+    "Advanced": {
+        "update-check": (None, "Check for updates", "checkbox", None, True),
     #     "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
-    # }
-}
-
-SPELLCHECK_LANGUAGES = {
-    "English": "en",
-    "Deutsch": "de",
-    "Español": "es",
-    "Français": "fr",
-    "Italiano": "it",
-}
-USER_DICTIONARY_PATH = "res/dicts/user.txt"
-
-ICON_MAPPING = {
-    "Save": "save.png",
-    "Save as": "file-symlink.png",
-    "Open": "folder-open.png",
-    "New": "file-plus.png",
-    
-    "Undo": "undo-2.png",
-    "Redo": "redo-2.png",
-    "Find": "search.png",
-    "Find and Replace": "replace.png",
-    
-    "Cut": "scissors.png",
-    "Copy": "copy.png",
-    "Paste": "clipboard.png",
-    "Select All": "mouse-pointer-click.png",
-    
-    "Bold": "bold.png",
-    "Italic": "italic.png",
-    "Underline": "underline.png",
-    "Super": "superscript.png",
-    "Sub": "subscript.png",
-    "Center": "align-center.png",
-    "Bold and Italic": "type.png",
-    "Marker": "flag.png",
-    "Highlight": "highlighter.png",
-    "Comment": "message-square.png",
-    "Code": "code.png",
-    "Code Block": "code.png",
-
-    "Title": "type.png",
-    "Heading": "heading.png",
-    "Box": "box.png",
-    "Box Warning": "alert-triangle.png",
-    "Box Danger": "alert-octagon.png",
-    "Box Info": "info.png",
-    "Note": "sticky-note.png",
-    "Table": "table.png",
-    "Pie Chart": "pie-chart.png",
-    "Bar Chart": "bar-chart.png",
-    "Root": "radical.png",
-    "Fraction": "divide.png",
-    "Definition": "book-open.png",
-    "Coordinates": "move-3d.png",
-    
-    "Export File": "file-down.png",
-    "Export File as PDF": "file-text.png",
-    "Print": "printer.png",
-    "Copy HTML": "file-code.png",
-
-    "Cleanup temporary directories": "trash-2.png",
-    "Open application directory": "folder-archive.png",
-    "Open temporary directory": "folder-clock.png",
-    "Open themes directory": "palette.png",
-    "Settings": "settings.png",
-    "Show welcome page": "smile.png",
-
-    "Report a Bug": "bug.png",
-    "GitHub": "folder-git-2.png",
-    "About this Application": "circle-question-mark.png",
-    "License": "scale.png",
-    "Reference && Manual": "book-marked.png",
-    "Developer Website": "globe.png",
-    "Developer GitHub": "git-branch.png",
-    "Latest Release": "gift.png"
-}
-
-DEFAULT_PATH = f"{QDir.homePath()}/Documents"
-
-GUIDE_CSS = """
-    body { color: #D4D4D4; font-size: 13px; }
-    h1 { color: #FFFFFF; font-size: 20px; }
-    h2 { color: #FFFFFF; font-size: 16px; margin-top: 18px; }
-    a { color: #b83b3b; }
-    code { background-color: #2D2D2D; color: #E0E0E0; font-family: Consolas, monospace; }
-    pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
-    th { background-color: #2D2D2D; color: #FFFFFF; }
-"""
-
-
-def _p(html):
-    return f"<p>{html}</p>"
-
-def _code(src):
-    return "<pre>" + html.escape(src.strip("\n"), quote=False) + "</pre>"
-
-def _table(rows, header=None):
-    out = '<table cellspacing="0" cellpadding="5" width="100%">'
-    if header:
-        out += "<tr>" + "".join(f'<th align="left">{h}</th>' for h in header) + "</tr>"
-    for first, *rest in rows:
-        out += f"<tr><td><code>{first}</code></td>"
-        out += "".join(f"<td>{c}</td>" for c in rest) + "</tr>"
-    return out + "</table>"
-
-# Startup and helpers
-title(CURRENT_VERSION)
-website()
-
-# sigh...
-if sys.platform == "linux":
-    os.environ["QT_QUICK_BACKEND"] = "software"
-    os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
-    warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
-
-
-
-info(f"Default path set to {DEFAULT_PATH}")
-
-def resource_path(relative_path: str) -> str:
-    if hasattr(sys, "_MEIPASS"):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
-def execute_path() -> str:
-    if hasattr(sys, "_MEIPASS"):
-        path = sys._MEIPASS
-    else:
-        path = os.path.abspath(".")
-    return os.path.join(path)
-
-def open_file_or_dir(path):
-    if sys.platform == "win32":
-        os.startfile(path)
-    elif sys.platform == "darwin":
-        subprocess.run(["open", path])
-    else:
-        subprocess.run(["xdg-open", path])
-
-def get_latest_version(repo_owner, repo_name):
-    headers = {
-        "User-Agent": "annaScript-Studio-Updater"
     }
-    try:
-        if not DO_NOT_CHECK_FOR_UPDATES:
-            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
-            response = requests.get(url, timeout=(3.05, 5), headers=headers)
-            response.raise_for_status()
-            return response.json()["tag_name"]
-        else:
-            debug("Checking for updates is disabled, skipping...")
-            return None
-    except:
-        warning("Could not determine latest release, skipping...")
-        return None
-
-info(f"Executing from: {execute_path()}")
-
-if getattr(sys, "frozen", False):
-    # Executable = do nothing
-    pass
-else:
-    # Normal Python
-    if not execute_path().endswith("src"): # Not good
-        warning("Not running from src, aborting...")
-        error("The Python application can only run from the src directory! Type 'cd src' and try again!")
-        info("Process exited.")
-        sys.exit(1)
-
-update_available = False
-
-LATEST_VERSION = get_latest_version(REPO_OWNER, REPO_NAME)
-
-if LATEST_VERSION:
-    if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
-        info(f"Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
-        update_available = True
-    else:
-        success(f"{CURRENT_VERSION} is the newest version")
-        update_available = False
-
-if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
-    warning("Could not load icons, check if you are in src directory")
-
-def get_white_icon(icon_path):
-    # easier than recoloring all icons
-    pixmap = QPixmap(icon_path)
-    if pixmap.isNull():
-        return QIcon()
-
-    painter = QPainter(pixmap)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-    painter.fillRect(pixmap.rect(), QColor("#FFFFFF"))
-    painter.end()
-    
-    return QIcon(pixmap)
-
+}
 
 class SettingsManager:
-
     def __init__(self, defaults: dict):
         self.defaults = defaults
         self.defaults_flat = self._flatten_defaults(defaults)
@@ -499,8 +412,226 @@ class SettingsManager:
         return self.settings.copy()
 
 
+
+splash_status("Loading settings...")
 settings_manager = SettingsManager(SETTINGS)
 settings = settings_manager.settings
+
+do_not_check_for_updates = (settings_manager.get("update-check") == False)
+
+# Constants
+CURRENT_VERSION = "v1.3.0"
+CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
+
+# change these if you've forked the repo
+REPO_OWNER = "hasderhi"
+REPO_NAME = "annascript-studio"
+
+# needed to prevent the preview from opening web links internally
+WEB_DOMAIN_REGEX = re.compile(
+    r'(?:^|/|//)([a-z0-9]+([\-.][a-z0-9]+)*\.[a-z]{2,})(?::[0-9]+)?(?:/.*)?$', 
+    re.IGNORECASE
+)
+
+# allowed extensions, everything else will not be opened by the preview.
+# this is only a draft, will revisit it when the asset logic is implemented.
+LOCAL_ASSET_EXTENSIONS = {
+    '.html', '.htm', '.xhtml', '.xml', '.json', '.js', '.css',
+    '.txt', '.md', '.pdf', '.csv', '.tsv',
+    '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.tiff',
+    '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',
+    '.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'
+}
+
+SPELLCHECK_LANGUAGES = {
+    "English": "en",
+    "Deutsch": "de",
+    "Español": "es",
+    "Français": "fr",
+    "Italiano": "it",
+}
+USER_DICTIONARY_PATH = "res/dicts/user.txt"
+
+ICON_MAPPING = {
+    "Save": "save.png",
+    "Save as": "file-symlink.png",
+    "Open": "folder-open.png",
+    "New": "file-plus.png",
+    
+    "Undo": "undo-2.png",
+    "Redo": "redo-2.png",
+    "Find": "search.png",
+    "Find and Replace": "replace.png",
+    
+    "Cut": "scissors.png",
+    "Copy": "copy.png",
+    "Paste": "clipboard.png",
+    "Select All": "mouse-pointer-click.png",
+    
+    "Bold": "bold.png",
+    "Italic": "italic.png",
+    "Underline": "underline.png",
+    "Super": "superscript.png",
+    "Sub": "subscript.png",
+    "Center": "align-center.png",
+    "Bold and Italic": "type.png",
+    "Marker": "flag.png",
+    "Highlight": "highlighter.png",
+    "Comment": "message-square.png",
+    "Code": "code.png",
+    "Code Block": "code.png",
+
+    "Title": "type.png",
+    "Heading": "heading.png",
+    "Box": "box.png",
+    "Box Warning": "alert-triangle.png",
+    "Box Danger": "alert-octagon.png",
+    "Box Info": "info.png",
+    "Note": "sticky-note.png",
+    "Table": "table.png",
+    "Pie Chart": "pie-chart.png",
+    "Bar Chart": "bar-chart.png",
+    "Root": "radical.png",
+    "Fraction": "divide.png",
+    "Definition": "book-open.png",
+    "Coordinates": "move-3d.png",
+    
+    "Export File": "file-down.png",
+    "Export File as PDF": "file-text.png",
+    "Print": "printer.png",
+    "Copy HTML": "file-code.png",
+
+    "Cleanup temporary directories": "trash-2.png",
+    "Open application directory": "folder-archive.png",
+    "Open temporary directory": "folder-clock.png",
+    "Open themes directory": "palette.png",
+    "Settings": "settings.png",
+    "Show welcome page": "smile.png",
+
+    "Report a Bug": "bug.png",
+    "GitHub": "folder-git-2.png",
+    "About this Application": "circle-question-mark.png",
+    "License": "scale.png",
+    "Reference && Manual": "book-marked.png",
+    "Developer Website": "globe.png",
+    "Developer GitHub": "git-branch.png",
+    "Latest Release": "gift.png"
+}
+
+DEFAULT_PATH = f"{QDir.homePath()}/Documents"
+
+GUIDE_CSS = """
+    body { color: #D4D4D4; font-size: 13px; }
+    h1 { color: #FFFFFF; font-size: 20px; }
+    h2 { color: #FFFFFF; font-size: 16px; margin-top: 18px; }
+    a { color: #b83b3b; }
+    code { background-color: #2D2D2D; color: #E0E0E0; font-family: Consolas, monospace; }
+    pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
+    th { background-color: #2D2D2D; color: #FFFFFF; }
+"""
+
+
+def _p(html):
+    return f"<p>{html}</p>"
+
+def _code(src):
+    return "<pre>" + html.escape(src.strip("\n"), quote=False) + "</pre>"
+
+def _table(rows, header=None):
+    out = '<table cellspacing="0" cellpadding="5" width="100%">'
+    if header:
+        out += "<tr>" + "".join(f'<th align="left">{h}</th>' for h in header) + "</tr>"
+    for first, *rest in rows:
+        out += f"<tr><td><code>{first}</code></td>"
+        out += "".join(f"<td>{c}</td>" for c in rest) + "</tr>"
+    return out + "</table>"
+
+
+
+
+splash_status("Starting up...")
+title(CURRENT_VERSION)
+website()
+
+if sys.platform == "linux":
+    warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
+
+info(f"Default path set to {DEFAULT_PATH}")
+
+def execute_path() -> str:
+    if hasattr(sys, "_MEIPASS"):
+        path = sys._MEIPASS
+    else:
+        path = os.path.abspath(".")
+    return os.path.join(path)
+
+def open_file_or_dir(path):
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", path])
+    else:
+        subprocess.run(["xdg-open", path])
+
+def get_latest_version(repo_owner, repo_name):
+    headers = {
+        "User-Agent": "annaScript-Studio-Updater"
+    }
+    try:
+        if not do_not_check_for_updates:
+            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+            response = requests.get(url, timeout=(3.05, 5), headers=headers)
+            response.raise_for_status()
+            return response.json()["tag_name"]
+        else:
+            debug("Checking for updates is disabled, skipping...")
+            return None
+    except:
+        warning("Could not determine latest release, skipping...")
+        return None
+
+info(f"Executing from: {execute_path()}")
+
+if getattr(sys, "frozen", False):
+    # Executable = do nothing
+    pass
+else:
+    # Normal Python
+    if not execute_path().endswith("src"): # Not good
+        splash_close()
+        warning("Not running from src, aborting...")
+        error("The Python application can only run from the src directory! Type 'cd src' and try again!")
+        info("Process exited.")
+        sys.exit(1)
+
+update_available = False
+
+splash_status("Checking for updates...")
+LATEST_VERSION = get_latest_version(REPO_OWNER, REPO_NAME)
+
+if LATEST_VERSION:
+    if Version(LATEST_VERSION) > Version(CURRENT_VERSION):
+        info(f"Update available: {CURRENT_VERSION} -> {LATEST_VERSION}")
+        update_available = True
+    else:
+        success(f"{CURRENT_VERSION} is the newest version")
+        update_available = False
+
+if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
+    warning("Could not load icons, check if you are in src directory")
+
+def get_white_icon(icon_path):
+    # easier than recoloring all icons
+    pixmap = QPixmap(icon_path)
+    if pixmap.isNull():
+        return QIcon()
+
+    painter = QPainter(pixmap)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    painter.fillRect(pixmap.rect(), QColor("#FFFFFF"))
+    painter.end()
+    
+    return QIcon(pixmap)
 
 
 
@@ -1777,6 +1908,7 @@ class SpellChecker:
 
     def _load(self, code):
         info(f"Loading spell check dictionary: {code.upper()}")
+        splash_status(f"Loading spell check dictionary ({code.upper()})...")
         path = resource_path(f"res/dicts/{code}.txt")
         sym = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
         try:
@@ -4337,16 +4469,13 @@ class MainWindow(QMainWindow):
 
 # run entry
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
-
     app.setStyleSheet("""
     QMainWindow, QWidget {
         background-color: #202020;
         color: #ffffff;
     }
     """)
-    
+
     # custom scrollbar because PySide defaults to a very 1995 one if global styles are overwritten
     app.setStyleSheet("""
     QScrollBar:vertical {
@@ -4388,8 +4517,12 @@ if __name__ == "__main__":
         background: none;
     }""")
 
+    splash_status("Building interface...")
     win = MainWindow()
+
+    splash_status("Ready")
     win.show()
+    splash_close()
     success("Created main window")
     app.exec()
 
