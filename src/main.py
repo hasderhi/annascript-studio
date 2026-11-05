@@ -6,7 +6,6 @@
 To change certain application functions, please check the constants below the imports!
 """
 
-
 import os
 import sys
 import re
@@ -20,7 +19,6 @@ import datetime
 from pathlib import Path
 from typing import Any
 
-# sigh...
 if sys.platform == "linux":
     os.environ["QT_QUICK_BACKEND"] = "software"
     os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
@@ -54,7 +52,6 @@ from logger import (
     title,
     website
 )
-
 
 def resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
@@ -94,6 +91,7 @@ SPELLCHECK_LANGUAGES = {
     "Français": "fr",
     "Italiano": "it",
 }
+
 USER_DICTIONARY_PATH = "res/dicts/user.txt"
 
 ICON_MAPPING = {
@@ -180,8 +178,92 @@ GUIDE_CSS = """
     th { background-color: #2D2D2D; color: #FFFFFF; }
 """
 
+SETTINGS = {
+    "General": {
+        # "author-name": (None, "Default author name", "text", None, ""),
+        # "default-theme": (None, "Default theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", 
+        #                                                       "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default"),
+        # "start-with-darkmode-as-default": (None, "Start documents in dark mode", "checkbox", None, False),
+    },
+    "Spell Check": {
+        "enable-spellcheck": (None, "Enable spell checking", "checkbox", None, False),
+        "spellcheck-language": (None, "Language", "dropdown", ["English", "Deutsch", "Español", "Français", "Italiano"], "English"),
+    },
+    "Rendering": {
+        "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
+    },
+    "View": {
+        "font-size": (None, "Editor font size", "spinbox", [1, 200], 12),
+    },
+    "Advanced": {
+        "update-check": (None, "Check for updates", "checkbox", None, True),
+    #     "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
+    }
+}
+
 title(CURRENT_VERSION)
 website()
+
+# helpers
+def _p(html):
+    return f"<p>{html}</p>"
+
+def _code(src):
+    return "<pre>" + html.escape(src.strip("\n"), quote=False) + "</pre>"
+
+def _table(rows, header=None):
+    out = '<table cellspacing="0" cellpadding="5" width="100%">'
+    if header:
+        out += "<tr>" + "".join(f'<th align="left">{h}</th>' for h in header) + "</tr>"
+    for first, *rest in rows:
+        out += f"<tr><td><code>{first}</code></td>"
+        out += "".join(f"<td>{c}</td>" for c in rest) + "</tr>"
+    return out + "</table>"
+
+def execute_path() -> str:
+    if hasattr(sys, "_MEIPASS"):
+        path = sys._MEIPASS
+    else:
+        path = os.path.abspath(".")
+    return os.path.join(path)
+
+def open_file_or_dir(path):
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", path])
+    else:
+        subprocess.run(["xdg-open", path])
+
+def get_latest_version(repo_owner, repo_name):
+    headers = {
+        "User-Agent": "annaScript-Studio-Updater"
+    }
+    try:
+        if not do_not_check_for_updates:
+            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+            response = requests.get(url, timeout=(3.05, 5), headers=headers)
+            response.raise_for_status()
+            return response.json()["tag_name"]
+        else:
+            debug("Checking for updates is disabled, skipping...")
+            return None
+    except:
+        warning("Could not determine latest release, skipping...")
+        return None
+
+def get_white_icon(icon_path):
+    # easier than recoloring all icons
+    pixmap = QPixmap(icon_path)
+    if pixmap.isNull():
+        return QIcon()
+
+    painter = QPainter(pixmap)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    painter.fillRect(pixmap.rect(), QColor("#FFFFFF"))
+    painter.end()
+    
+    return QIcon(pixmap)
 
 class SplashScreen(QWidget):
     SIZE = 400
@@ -230,7 +312,6 @@ class SplashScreen(QWidget):
 
         self.move(screen.availableGeometry().center() - self.rect().center())
 
-
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -278,14 +359,11 @@ class SplashScreen(QWidget):
         self.repaint()
         QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
 
-
 _splash = None
-
 
 def splash_status(text: str):
     if _splash is not None and _splash.isVisible():
         _splash.set_status(text)
-
 
 def splash_close():
     global _splash
@@ -294,13 +372,11 @@ def splash_close():
         _splash.deleteLater()
         _splash = None
 
-
 QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 app = QApplication.instance() or QApplication(sys.argv)
 app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
 _splash = SplashScreen(resource_path("res/annascriptstudio.png"), f"annaScript Studio {CURRENT_VERSION}")
 _splash.show()
-
 
 # the heavy stuff
 splash_status("Loading libraries...")
@@ -321,31 +397,6 @@ from compiler_api import (
     BASE_DIR,
     THEMES_SRC
 )
-# why is this up here?
-# because else I couldn't access the check-for-updates setting on startup
-# very suboptimal ik
-SETTINGS = {
-    "General": {
-        # "author-name": (None, "Default author name", "text", None, ""),
-        # "default-theme": (None, "Default theme", "dropdown", ["Accessible", "Cyberpunk", "Default", "Essay", "Essay-Pro", "Essay-Print", 
-        #                                                       "Forest", "Notes", "Pastel", "Retro", "Solarized"], "Default"),
-        # "start-with-darkmode-as-default": (None, "Start documents in dark mode", "checkbox", None, False),
-    },
-    "Spell Check": {
-        "enable-spellcheck": (None, "Enable spell checking", "checkbox", None, False),
-        "spellcheck-language": (None, "Language", "dropdown", ["English", "Deutsch", "Español", "Français", "Italiano"], "English"),
-    },
-    "Rendering": {
-        "disable-realtime": (None, "Disable real-time preview", "checkbox", None, False),
-    },
-    "View": {
-        "font-size": (None, "Editor font size", "spinbox", [1, 200], 12),
-    },
-    "Advanced": {
-        "update-check": (None, "Check for updates", "checkbox", None, True),
-    #     "safe-mode": (None, "Enable safe mode", "checkbox", None, False)
-    }
-}
 
 class SettingsManager:
     def __init__(self, defaults: dict):
@@ -383,15 +434,11 @@ class SettingsManager:
         validated = self.defaults_flat.copy()
 
         for category in self.defaults.values():
-
             for key, info in category.items():
-
                 connector, label, widget_type, options, default = info
-
                 # missing settings retain their defaults
                 if key not in data:
                     continue
-
                 value = data[key]
                 if widget_type == "spinbox":
                     if type(value) is not int:
@@ -440,7 +487,6 @@ class SettingsManager:
         if not settings_path.is_file():
             warning("No settings file found. Using default settings.")
             return self.defaults_flat.copy()
-
         try:
             info(f"Loading settings from {settings_path}")
 
@@ -448,13 +494,9 @@ class SettingsManager:
                 stored = json.load(file)
 
             validated = self.validate_settings(stored)
-
             success("Settings successfully loaded and validated.")
-
             return validated
-
         except (OSError, json.JSONDecodeError, ValueError) as exc:
-
             self.load_warning = (
                 f"The settings file could not be loaded because "
                 f"it contains invalid or corrupted data.\n\n"
@@ -463,31 +505,22 @@ class SettingsManager:
                 f"instead. Your existing settings file has not "
                 f"been modified."
             )
-
-            error(
-                f"Settings validation failed: {exc}. "
-                f"Falling back to defaults."
-            )
-
+            error(f"Settings validation failed: {exc}. Falling back to defaults.")
             return self.defaults_flat.copy()
 
     def show_load_warning(self, parent=None):
         if not self.load_warning:
             return
-
         QMessageBox.warning(
             parent,
             "Invalid settings file",
             self.load_warning
         )
-
         self.load_warning = None
 
     def save_settings(self, settings: dict[str, Any]) -> bool:
-
         settings_path = self._get_path()
         temporary_path = settings_path.with_suffix(".json.tmp")
-
         try:
             # never save invalid settings either
             validated = self.validate_settings(settings)
@@ -496,7 +529,6 @@ class SettingsManager:
                 parents=True,
                 exist_ok=True
             )
-
             with temporary_path.open("w", encoding="utf-8") as file:
                 json.dump(
                     validated,
@@ -518,7 +550,6 @@ class SettingsManager:
                 warning(
                     f"Failed to remove temporary file: {cleanup_exc}"
                 )
-
             return False
 
     def get(self, key: str, fallback=None):
@@ -531,74 +562,19 @@ class SettingsManager:
         self.settings = self.defaults_flat.copy()
         return self.settings.copy()
 
-
-
 splash_status("Loading settings...")
 settings_manager = SettingsManager(SETTINGS)
 settings = settings_manager.settings
 
+# everything loaded at startup must happen here:
 do_not_check_for_updates = (settings_manager.get("update-check") == False)
-
 enable_realtime = (settings_manager.get("disable-realtime") == False)
-
-
-def _p(html):
-    return f"<p>{html}</p>"
-
-def _code(src):
-    return "<pre>" + html.escape(src.strip("\n"), quote=False) + "</pre>"
-
-def _table(rows, header=None):
-    out = '<table cellspacing="0" cellpadding="5" width="100%">'
-    if header:
-        out += "<tr>" + "".join(f'<th align="left">{h}</th>' for h in header) + "</tr>"
-    for first, *rest in rows:
-        out += f"<tr><td><code>{first}</code></td>"
-        out += "".join(f"<td>{c}</td>" for c in rest) + "</tr>"
-    return out + "</table>"
-
-
-
 
 splash_status("Starting up...")
 
 if sys.platform == "linux":
     warning("Linux detected, expect graphic driver warnings (if the UI works, you can ignore them)")
-
 info(f"Default path set to {DEFAULT_PATH}")
-
-def execute_path() -> str:
-    if hasattr(sys, "_MEIPASS"):
-        path = sys._MEIPASS
-    else:
-        path = os.path.abspath(".")
-    return os.path.join(path)
-
-def open_file_or_dir(path):
-    if sys.platform == "win32":
-        os.startfile(path)
-    elif sys.platform == "darwin":
-        subprocess.run(["open", path])
-    else:
-        subprocess.run(["xdg-open", path])
-
-def get_latest_version(repo_owner, repo_name):
-    headers = {
-        "User-Agent": "annaScript-Studio-Updater"
-    }
-    try:
-        if not do_not_check_for_updates:
-            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
-            response = requests.get(url, timeout=(3.05, 5), headers=headers)
-            response.raise_for_status()
-            return response.json()["tag_name"]
-        else:
-            debug("Checking for updates is disabled, skipping...")
-            return None
-    except:
-        warning("Could not determine latest release, skipping...")
-        return None
-
 info(f"Executing from: {execute_path()}")
 
 if getattr(sys, "frozen", False):
@@ -628,21 +604,6 @@ if LATEST_VERSION:
 
 if os.path.isfile(resource_path("res/annascript.png")) == False and os.path.isfile(resource_path("res/annascriptstudio.png")) == False:
     warning("Could not load icons, check if you are in src directory")
-
-def get_white_icon(icon_path):
-    # easier than recoloring all icons
-    pixmap = QPixmap(icon_path)
-    if pixmap.isNull():
-        return QIcon()
-
-    painter = QPainter(pixmap)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-    painter.fillRect(pixmap.rect(), QColor("#FFFFFF"))
-    painter.end()
-    
-    return QIcon(pixmap)
-
-
 
 class SettingsDialog(QDialog):
     def __init__(
@@ -806,7 +767,6 @@ class SettingsDialog(QDialog):
                 element_id,
                 default_value
             )
-
             if widget_type == "spinbox":
                 widget = QSpinBox()
 
@@ -817,14 +777,12 @@ class SettingsDialog(QDialog):
 
                 if connector:
                     widget.valueChanged.connect(connector)
-
             elif widget_type == "checkbox":
                 widget = QCheckBox()
                 widget.setChecked(value)
 
                 if connector:
                     widget.toggled.connect(connector)
-
             elif widget_type == "dropdown":
                 widget = QComboBox()
 
@@ -835,14 +793,12 @@ class SettingsDialog(QDialog):
 
                 if connector:
                     widget.currentTextChanged.connect(connector)
-
             elif widget_type == "text":
                 widget = QLineEdit()
                 widget.setText(str(value))
 
                 if connector:
                     widget.textChanged.connect(connector)
-
             else:
                 continue
 
@@ -851,24 +807,18 @@ class SettingsDialog(QDialog):
 
     def get_values(self):
         results = {}
-
         for element_id, widget in self.widgets.items():
-
             if isinstance(widget, QSpinBox):
                 results[element_id] = widget.value()
-
             elif isinstance(widget, QCheckBox):
                 results[element_id] = widget.isChecked()
-
             elif isinstance(widget, QComboBox):
                 results[element_id] = widget.currentText()
-
             elif isinstance(widget, QLineEdit):
                 results[element_id] = widget.text()
         return results
 
     def reset_settings(self):
-
         answer = QMessageBox.question(
             self,
             "Reset settings",
@@ -885,28 +835,21 @@ class SettingsDialog(QDialog):
         defaults = settings_manager.defaults_flat
 
         for element_id, widget in self.widgets.items():
-
             value = defaults[element_id]
-
             if isinstance(widget, QSpinBox):
                 widget.setValue(value)
-
             elif isinstance(widget, QCheckBox):
                 widget.setChecked(value)
-
             elif isinstance(widget, QComboBox):
                 widget.setCurrentText(str(value))
-
             elif isinstance(widget, QLineEdit):
                 widget.setText(str(value))
 
         self.working_settings = defaults.copy()
-
         info("Settings restored to defaults (not yet saved).")
 
     def handle_save(self):
         settings_data = self.get_values()
-
         if not settings_manager.save_settings(settings_data):
             QMessageBox.critical(
                 self,
@@ -915,30 +858,24 @@ class SettingsDialog(QDialog):
                 "Your previous settings have been retained."
             )
             return
-
         self.working_settings = settings_data.copy()
-
         if self.callback_target and hasattr(
             self.callback_target,
             "apply_settings"
         ):
             self.callback_target.apply_settings(settings_data)
-
         self.accept()
 
 # Editor
 # font_size = settings_manager.get("font-size")
+# theme = settings_manager.get("default-theme")
 
-# Rendering engine
+# Rendering engine - yes, that's not great ik.
 # enable_realtime = settings_manager.get("disable-realtime")
 
 # Spell checker
 # spellcheck_enabled = settings_manager.get("enable-spellcheck")
 # language = settings_manager.get("spellcheck-language")
-
-# Theme manager
-# theme = settings_manager.get("default-theme")
-
 
 class FindReplaceDialog(QDialog):
     def __init__(self, editor, replace_mode=False, parent=None):
@@ -1160,7 +1097,6 @@ class FindReplaceDialog(QDialog):
             regex_flags = (
                 QRegularExpression.PatternOption.NoPatternOption
             )
-
             if not self.case_btn.isChecked():
                 regex_flags |= (
                     QRegularExpression.PatternOption.CaseInsensitiveOption
@@ -1172,7 +1108,6 @@ class FindReplaceDialog(QDialog):
                 return None, pattern.errorString()
 
             return pattern, None
-
         return text, None
 
     def update_status(self, *_):
@@ -1187,7 +1122,6 @@ class FindReplaceDialog(QDialog):
             )
             self.status_label.setStyleSheet("color: #F48771;")
             return
-
         if pattern is None:
             self.status_label.setText("Enter text to search.")
             self.status_label.setStyleSheet("color: #AAAAAA;")
@@ -1526,9 +1460,6 @@ class FindReplaceDialog(QDialog):
 
         return before_ok and after_ok
 
-
-
-
 class RibbonGroup(QWidget):
     def __init__(self, title, buttons, parent=None):
         super().__init__(parent)
@@ -1612,7 +1543,6 @@ class RibbonGroup(QWidget):
                 margin-top: 4px;
             }
         """)
-
 
 class RibbonMenu(QWidget):
     def __init__(self, compile_ops, file_ops, edit_ops, clipboard_ops, font_ops, insert_ops, review_ops, export_ops, debug_ops, help_ops, parent=None):
@@ -1791,7 +1721,6 @@ class RibbonMenu(QWidget):
         layout.addStretch()
         return tab
 
-
     def make_review_tab(self):
         tab = QWidget()
         tab.setObjectName("RibbonContent")
@@ -1812,7 +1741,6 @@ class RibbonMenu(QWidget):
 
         review_group.buttons["Access Dictionaries"].clicked.connect(self.review_ops["open_dicts"])
         review_group.buttons["Open Dictionary Source"].clicked.connect(lambda: open_url("https://github.com/wolfgarbe/SymSpell/tree/master/SymSpell.FrequencyDictionary"))
-
         return tab
 
     def make_export_tab(self):
@@ -1893,14 +1821,12 @@ class RibbonMenu(QWidget):
         about_group.buttons["Developer Website"].clicked.connect(lambda: open_url("https://tk-dev-software.com"))
         about_group.buttons["Developer GitHub"].clicked.connect(lambda: open_url("https://github.com/hasderhi/"))
         about_group.buttons["Latest Release"].clicked.connect(lambda: open_url("https://github.com/hasderhi/annascript-studio/releases/latest"))
-
         return tab
     
 class SpellBlockData(QTextBlockUserData):
     def __init__(self, errors):
         super().__init__()
         self.errors = errors
-
 
 class SpellChecker:
     # German, you suck (for spell checking). 
@@ -2113,7 +2039,6 @@ class SpellChecker:
             self.user_words.discard(normalized)
             return False
 
-
 spell_checker = SpellChecker()
 spell_checker.configure(
     settings_manager.get("enable-spellcheck"),
@@ -2289,11 +2214,7 @@ class AScriptHighlighter(QSyntaxHighlighter):
                 start, end = match.span()
                 self.setFormat(start, end - start, fmt)
 
-
-# Editor
-
 class AScriptEditor(QPlainTextEdit):
-
     TAB = " " * 4
 
     def __init__(self):
@@ -2431,7 +2352,6 @@ class AScriptEditor(QPlainTextEdit):
 
         self.setFont(editor_font)
 
-
     def keyPressEvent(self, event):
         key = event.key()
         modifiers = event.modifiers()
@@ -2529,10 +2449,9 @@ class AScriptEditor(QPlainTextEdit):
         cursor.movePosition(cursor.MoveOperation.EndOfBlock)
         self.setTextCursor(cursor)
 
-
-# the amount of code needed just to (reliably) prevent QtWebEngine from opening non-local 
-# links is absolutely hilarious. well, i guess chromium just likes to open web pages.
 class CustomWebEnginePage(QWebEnginePage):
+    # the amount of code needed just to (reliably) prevent QtWebEngine from opening non-local 
+    # links is absolutely hilarious. well, i guess chromium just likes to open web pages.
     def acceptNavigationRequest(self, url: QUrl, _type, isMainFrame):
         url_str = url.toString()
         path_lower = url.path().lower()
@@ -2566,7 +2485,6 @@ class CustomWebEnginePage(QWebEnginePage):
 
         return super().acceptNavigationRequest(url, _type, isMainFrame)
 
-
 # if chromium again decides to bail out, I'm prepared
 class StderrLogger:
     def __init__(self, original):
@@ -2579,14 +2497,13 @@ class StderrLogger:
         timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
         self.original.write(
-            f"[{timestamp}] Chromium: {text}"
+            f"[{timestamp}] Chromium: {text}\n"
         )
 
     def flush(self):
         self.original.flush()
 
 sys.stderr = StderrLogger(sys.stderr)
-
 
 class FilterableTable(QTableWidget):
     def __init__(self, rows):
@@ -2651,9 +2568,6 @@ class FilterableTable(QTableWidget):
         menu.addAction(copy_symbol)
         menu.addAction(copy_desc)
         menu.exec(self.viewport().mapToGlobal(pos))
-
-
-
 
 class GuideBrowser(QTextBrowser):
     def __init__(self, sections):
@@ -3072,7 +2986,9 @@ Centered text
 
     # update 28/09/2026 - It's getting repetitive...
 
-    # Update 27/10/2026 You won't believe this...
+    # Update 27/10/2026 - You won't believe this...
+
+    # Update 05/11/2026 - Hahahahahahahahahahahahahahahaha
 
     def math_symbols(self):
         return [
@@ -3254,8 +3170,6 @@ Centered text
             (r"\pg", "⏎ 🗎", "Page Break")
         ]
 
-
-# Main
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -3379,18 +3293,14 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
 
         self.setup_shortcuts()
-
         self.compile_and_update_preview()
-
         self.update_window_title()
-
         self.open_file_from_args()
 
         if update_available:
             self.show_update_dialog(LATEST_VERSION)
 
         self.trigger_welcome()
-
 
     def trigger_welcome(self):
         welcome_html = f"""
@@ -3491,7 +3401,6 @@ class MainWindow(QMainWindow):
         </html>
         """
         self.preview.setHtml(welcome_html)
-
 
     def show_update_dialog(self, LATEST_VERSION):
         info("Notifying user...")
@@ -3649,7 +3558,6 @@ class MainWindow(QMainWindow):
         self.highlighter.rehighlight()
         enable_realtime = (settings_manager.get("disable-realtime") == False)
         success("Application settings successfully applied.")
-
 
     def maybe_save(self) -> bool:
             if not self.document_modified:
@@ -4613,7 +4521,6 @@ class MainWindow(QMainWindow):
 
         dlg.exec()
 
-
     def cleanup_tempdir(self):
         cleanup_force()
 
@@ -4653,8 +4560,6 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
-
-# run entry
 if __name__ == "__main__":
     app.setStyleSheet("""
     QMainWindow, QWidget {
@@ -4662,7 +4567,6 @@ if __name__ == "__main__":
         color: #ffffff;
     }
     """)
-
     # custom scrollbar because PySide defaults to a very 1995 one if global styles are overwritten
     app.setStyleSheet("""
     QScrollBar:vertical {
@@ -4713,6 +4617,4 @@ if __name__ == "__main__":
     success("Created main window")
     app.exec()
 
-
-# exit
 success("Process exited")
