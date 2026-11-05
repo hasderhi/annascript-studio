@@ -98,7 +98,7 @@ ICON_MAPPING = {
     "Undo": "undo-2.png",
     "Redo": "redo-2.png",
     "Find": "search.png",
-    "Find and Replace": "replace.png",
+    "Find / Replace": "replace.png",
     
     "Cut": "scissors.png",
     "Copy": "copy.png",
@@ -1631,7 +1631,7 @@ class RibbonMenu(QWidget):
         ])
         edit_group = RibbonGroup("Edit", [
             ["Undo", "Find"],
-            ["Redo", "Find and Replace"]
+            ["Redo", "Find / Replace"]
         ])
         clipboard_group = RibbonGroup("Clipboard", [
             ["Cut", "Copy"],
@@ -1653,7 +1653,7 @@ class RibbonMenu(QWidget):
         edit_group.buttons["Undo"].clicked.connect(self.edit_ops["undo"])
         edit_group.buttons["Redo"].clicked.connect(self.edit_ops["redo"])
         edit_group.buttons["Find"].clicked.connect(self.edit_ops["open_find_dialog"])
-        edit_group.buttons["Find and Replace"].clicked.connect(self.edit_ops["open_find_replace_dialog"])
+        edit_group.buttons["Find / Replace"].clicked.connect(self.edit_ops["open_find_replace_dialog"])
 
         clipboard_group.buttons["Cut"].clicked.connect(self.clipboard_ops["cut"])
         clipboard_group.buttons["Copy"].clicked.connect(self.clipboard_ops["copy"])
