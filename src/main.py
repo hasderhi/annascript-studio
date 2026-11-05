@@ -1,11 +1,3 @@
-"""
-# annaScript Studio
-
-## main executable
-
-To change certain application functions, please check the constants below the imports!
-"""
-
 import os
 import sys
 import re
