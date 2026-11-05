@@ -261,13 +261,15 @@ class SplashScreen(QWidget):
     SIZE = 400
     RADIUS = 28
     ICON_SIZE = 96
+    LOGO_SIZE = 100
+    ATTRIBUTION_COLOR = QColor("#a0a0a0")
 
     BG_COLOR = QColor("#2b2b2b")
     BORDER_COLOR = QColor("#3c3c3c")
     TITLE_COLOR = QColor("#ffffff")
     STATUS_COLOR = QColor("#a0a0a0")
 
-    def __init__(self, icon_path: str, app_name: str):
+    def __init__(self, icon_path: str, app_name: str, logo_path: str):
         super().__init__(
             None,
             Qt.WindowType.SplashScreen
@@ -284,7 +286,6 @@ class SplashScreen(QWidget):
         dpr = screen.devicePixelRatio()
 
         pixmap = QPixmap(icon_path)
-
         if not pixmap.isNull():
             pixmap = pixmap.scaled(
                 int(self.ICON_SIZE * dpr), int(self.ICON_SIZE * dpr),
@@ -292,12 +293,23 @@ class SplashScreen(QWidget):
                 Qt.TransformationMode.SmoothTransformation,
             )
             pixmap.setDevicePixelRatio(dpr)
-
         self._icon = pixmap
+
+        self._logo = QPixmap(logo_path)
+        if not self._logo.isNull():
+            self._logo = self._logo.scaled(
+                self.LOGO_SIZE,
+                self.LOGO_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
 
         self._title_font = QFont()
         self._title_font.setPointSize(20)
         self._title_font.setBold(True)
+
+        self._attribution_font = QFont()
+        self._attribution_font.setPointSize(8)
 
         self._status_font = QFont()
         self._status_font.setPointSize(9)
@@ -330,6 +342,31 @@ class SplashScreen(QWidget):
             QRectF(0, 182, self.width(), 36),
             Qt.AlignmentFlag.AlignCenter, self._app_name,
         )
+
+        attribution_text = "An application by"
+
+        p.setFont(self._attribution_font)
+        p.setPen(self.ATTRIBUTION_COLOR)
+
+        text_height = 20
+        logo_height = self._logo.height() if not self._logo.isNull() else 0
+        spacing = 8 if logo_height else 0
+        content_height = text_height + spacing + logo_height
+        top = 218
+        bottom = self.height() - 84
+
+        start_y = top + ((bottom - top - content_height) / 2)
+
+        p.drawText(
+            QRectF(0, start_y, self.width(), text_height),
+            Qt.AlignmentFlag.AlignCenter,
+            attribution_text,
+        )
+
+        if not self._logo.isNull():
+            x = int((self.width() - self._logo.width()) / 2)
+            y = int(start_y + text_height + spacing)
+            p.drawPixmap(x, y, self._logo)
 
         p.setFont(self._status_font)
         p.setPen(self.STATUS_COLOR)
@@ -367,7 +404,7 @@ def splash_close():
 QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 app = QApplication.instance() or QApplication(sys.argv)
 app.setWindowIcon(QIcon(resource_path("res/annascriptstudio.png")))
-_splash = SplashScreen(resource_path("res/annascriptstudio.png"), f"annaScript Studio {CURRENT_VERSION}")
+_splash = SplashScreen(resource_path("res/annascriptstudio.png"), f"annaScript Studio {CURRENT_VERSION}", resource_path("res/apbl.png"))
 _splash.show()
 
 # the heavy stuff
