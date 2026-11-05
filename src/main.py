@@ -77,9 +77,6 @@ WEB_DOMAIN_REGEX = re.compile(
     re.IGNORECASE
 )
 
-title(CURRENT_VERSION)
-website()
-
 # allowed extensions, everything else will not be opened by the preview.
 # this is only a draft, will revisit it when the asset logic is implemented.
 LOCAL_ASSET_EXTENSIONS = {
@@ -182,6 +179,9 @@ GUIDE_CSS = """
     pre { background-color: #1E1E1E; color: #E0E0E0; font-family: Consolas, monospace; }
     th { background-color: #2D2D2D; color: #FFFFFF; }
 """
+
+title(CURRENT_VERSION)
+website()
 
 class SplashScreen(QWidget):
     SIZE = 400
