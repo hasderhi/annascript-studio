@@ -3042,6 +3042,10 @@ Centered text
             (r"\lim_{x \to y}", "lim x → y", "Limit"),
             (r"\vec{a}", "a→", "Vector"),
 
+            (r"\cong", "≅", "Congruent"),
+            (r"\equiv", "≡", "Equivalent / identical"),
+            (r"\impliedby", "⇐", "Implied by"),
+
             (r"\infty", "∞", "Infinity"),
             (r"\propto", "∝", "Proportional to"),
 
@@ -3189,7 +3193,9 @@ Centered text
             (r"\down", "↓", "Arrow Down"),
             (r"\left", "←", "Arrow Left"),
             (r"\right", "→", "Arrow Right"),
-            (r"\swap", "⇄", "Arrow Swap")
+            (r"\swap", "⇄", "Arrow Swap"),
+            ("--", "–", "En dash"),
+            ("---", "—", "Em dash"),
         ]
 
     def page_structure(self):
