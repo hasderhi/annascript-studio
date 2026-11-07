@@ -60,9 +60,9 @@ You can also build *annaScript Studio* for any other OS using PyInstaller. Make 
 - Français
 - Italiano
 
-To use it, enable in the settings. When a word is unknown, it will be underlined with red dots. 
+To use it, enable in the settings. When a word is unknown, it will be underlined with red dots.
 
-Right clicking the word reveils possible suggestions and the options to ignore the word or add it to the dictionary. The first option is temporary and only lasts for the session, the second one permanently writes the word into the user dictionary. This is useful for words like names, places or other correct phrases not recognized by the spell check. 
+Right clicking the word reveils possible suggestions and the options to ignore the word or add it to the dictionary. The first option is temporary and only lasts for the session, the second one permanently writes the word into the user dictionary. This is useful for words like names, places or other correct phrases not recognized by the spell check.
 
 To access or modify the dictionary, open the `user.txt` file inside `/res/dicts/`.
 
