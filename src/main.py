@@ -3098,7 +3098,7 @@ Centered text
             (r"\benzene", "⌬", "Benzene ring"),
             (r"\std", "⦵", "Standard state"),
             (r"\nuclear", "☢", "Radioactive / nuclear"),
-            (r"\hbar", "ℏ", "Plank constant"),
+            (r"\hbar", "ℏ", "Planck constant"),
             (r"\ell", "ℓ", "Script l"),
         ]
 
