@@ -64,7 +64,13 @@ To use it, enable in the settings. When a word is unknown, it will be underlined
 
 Right clicking the word reveils possible suggestions and the options to ignore the word or add it to the dictionary. The first option is temporary and only lasts for the session, the second one permanently writes the word into the user dictionary. This is useful for words like names, places or other correct phrases not recognized by the spell check.
 
-To access or modify the dictionary, open the `user.txt` file inside `/res/dicts/`.
+To access or modify the user dictionary, open `user.txt` in the application's configuration directory. Its location depends on your operating system.
+
+|Operating system|Location|
+|----------------|--------|
+|Windows|`%APPDATA%\annaScript Studio\dicts\user.txt`|
+|Linux|`~/.config/annaScript Studio/dicts/user.txt`|
+|macOS|`~/Library/Application Support/annaScript Studio/dicts/user.txt`|
 
 ### Syntax and Macros
 

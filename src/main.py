@@ -52,6 +52,29 @@ def resource_path(relative_path: str) -> str:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+def user_data_path(*relative_path: str) -> str:
+    if sys.platform == "win32":
+        base_path = Path(
+            os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming"
+        )
+    elif sys.platform == "darwin":
+        base_path = Path.home() / "Library" / "Application Support"
+    else:
+        xdg_path = os.environ.get("XDG_CONFIG_HOME")
+        if xdg_path and Path(xdg_path).is_absolute() and xdg_path != "/":
+            base_path = Path(xdg_path)
+        else:
+            base_path = Path.home() / ".config"
+
+    app_path = base_path / "annaScript Studio"
+    app_path.mkdir(parents=True, exist_ok=True)
+    target_path = app_path.joinpath(*relative_path)
+
+    if relative_path:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    return str(target_path)
+
 # Constants
 CURRENT_VERSION = "v1.3.0"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
@@ -84,7 +107,7 @@ SPELLCHECK_LANGUAGES = {
     "Italiano": "it",
 }
 
-USER_DICTIONARY_PATH = "res/dicts/user.txt"
+USER_DICTIONARY_PATH = user_data_path("dicts/user.txt")
 
 ICON_MAPPING = {
     "Compile Now": "play.png",
@@ -449,8 +472,8 @@ class SettingsManager:
 
     @staticmethod
     def _get_path() -> Path:
-        return Path(resource_path(
-            "res/settings/settings.json"
+        return Path(user_data_path(
+            "settings/settings.json"
         ))
 
     def validate_settings(self, data: dict) -> dict:
