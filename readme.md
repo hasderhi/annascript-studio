@@ -343,32 +343,102 @@ If there is no recognisable data inside the chart macro, this error message will
 
 #### Coordinate systems
 
-Coordinate systems in *annaScript* support displaying points, vectors and functions. The declaration is easy and
-follows this structure:
+Coordinate systems in *annaScript* support displaying points, vectors, geometric objects and mathematical functions. The declaration follows this structure:
 
 ```annaScript
-::coordinates scale=scale title="My coordinate system"
-|label|type|position or expression|domain=start:end|
+::coordinates scale=scale title="title"
+|name|type|expression|
 ::
 ```
 
-For example, to display a point, a function and a vector:
+The `scale` and `title` parameters are optional:
+
+- `scale` determines the visible coordinate range and defaults to `20`.
+- `title` specifies an optional title displayed above the coordinate system.
+
+The coordinate system uses the same scale for both axes. Values of `scale` equal to or greater than `2000` are not supported.
+
+Each object is declared on a separate line. Its name, type and expression are enclosed in `|` characters and separated in that order.
+
+##### Supported object types
+
+| Type | Expression format | Description |
+|---|---|---|
+| `point` | `x,y` | Displays a point at the specified coordinates. |
+| `vector` | `x,y` | Displays a vector originating at `(0,0)`. |
+| `segment` | `x1,y1;x2,y2` | Displays a line segment between two points. |
+| `line` | `x1,y1;x2,y2` | Displays an infinite line through two points. |
+| `ray` | `x1,y1;x2,y2` | Displays a ray starting at the first point and passing through the second. |
+| `circle` | `cx,cy,r` | Displays a circle with centre `(cx,cy)` and radius `r`. |
+| `ellipse` | `cx,cy,rx,ry` | Displays an ellipse with centre `(cx,cy)` and radii `rx` and `ry`. |
+| `polygon` | `x1,y1;x2,y2;...` | Displays a polygon using the specified vertices. |
+| `angle` | `x1,y1;x2,y2;x3,y3` | Displays an angle defined by three points. |
+| `function` | Mathematical expression | Plots a mathematical function. |
+
+Coordinates are written as comma-separated pairs (`x,y`). When an object requires multiple points, separate the points using semicolons (`;`).
+
+For an angle, the first point defines one arm, the second point is the vertex, and the third point defines the other arm.
+
+##### Functions
+
+Functions can be plotted by specifying an expression using `x` as the variable:
 
 ```annaScript
-::coordinates scale=25 title="Demonstration"
-|P|point|10,13|
-|f(x)|function|2x**2-1|domain=-10:10|
-|v|vector|20,15|
+::coordinates
+|f|function|x**2|
 ::
 ```
 
-For functions, the only variable allowed is ```x```. If disallowed characters are used, this error will be shown:
+By default, the function is plotted across the visible coordinate range. You can optionally specify a custom domain using `domain=start:end` as a fourth field:
 
-```Error rendering coordinate system, disallowed character(s) in expression!```
+```annaScript
+::coordinates
+|f|function|x**2|domain=-5:5|
+::
+```
 
-If any other syntax error is found:
+The specified domain determines the interval over which the function is evaluated.
 
-```Error rendering coordinate system, check syntax/expressions!```
+Multiple functions can be included in the same coordinate system. They are automatically assigned different colours.
+
+##### Example
+
+The following example demonstrates the available object types:
+
+```annaScript
+::coordinates scale=10 title="Example coordinate system"
+|A|point|2,3|
+|B|point|-2,1|
+|v|vector|3,2|
+|AB|segment|2,3;-2,1|
+|l|line|1,2;-2,-1|
+|r|ray|-3,0;2,2|
+|c|circle|0,0,3|
+|e|ellipse|0,0,4,2|
+|P|polygon|-3,-2;0,3;3,-2|
+|α|angle|1,0;0,0;0,1|
+|f|function|x**2|
+|g|function|2*x+1|domain=-5:5|
+::
+```
+
+##### Errors and limitations
+
+If an expression contains unsupported characters, annaScript displays the following error:
+
+`Error rendering coordinate system, disallowed character(s) in expression!`
+
+For syntax errors or other problems with an expression, the following message is displayed:
+
+`Error rendering coordinate system, check syntax/expressions!`
+
+A few additional limitations apply:
+
+- Lines, rays and segments use the first two points provided.
+- Angles use the first three points provided.
+- Polygons require at least three points.
+- A line or ray cannot be drawn using two identical points.
+
 
 #### Tables
 
