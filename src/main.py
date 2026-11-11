@@ -2989,28 +2989,87 @@ Centered text
                     ("No data provided.", "There is no recognizable data in the macro."),
                 ])),
 
-            ("coordinates", "Coordinate Systems",
-                _p("Coordinate systems can display points, vectors and functions:")
-                + _code("""
+                ("coordinates", "Coordinate Systems",
+                    _p("Coordinate systems in <i>annaScript</i> support displaying points, vectors, "
+                    "geometric objects and mathematical functions. The declaration follows this structure:")
+                    + _code("""
 ::coordinates scale=scale title="My coordinate system"
-|label|type|position or expression|domain=start:end|
+|name|type|expression|
 ::
-""")
-                + _p("For example, a point, a function and a vector:")
-                + _code("""
-::coordinates scale=25 title="Demonstration"
-|P|point|10,13|
-|f(x)|function|2x**2-1|domain=-10:10|
-|v|vector|20,15|
+                """)
+                    + _p("The <code>scale</code> and <code>title</code> parameters are optional. "
+                        "<code>scale</code> determines the visible coordinate range and defaults to "
+                        "<code>20</code>. The same scale is used for both axes. Values equal to or "
+                        "greater than <code>2000</code> are not supported. "
+                        "<code>title</code> specifies an optional title displayed above the coordinate system.")
+                    + _p("Each object is declared on a separate line. Its name, type and expression "
+                        "are enclosed in <code>|</code> characters and separated in that order.")
+                    + _p("<b>Supported object types:</b>")
+                    + _table([
+                        ("point", "<code>x,y</code>", "Displays a point at the specified coordinates."),
+                        ("vector", "<code>x,y</code>", "Displays a vector originating at <code>(0,0)</code>."),
+                        ("segment", "<code>x1,y1;x2,y2</code>", "Displays a line segment between two points."),
+                        ("line", "<code>x1,y1;x2,y2</code>", "Displays an infinite line through two points."),
+                        ("ray", "<code>x1,y1;x2,y2</code>", "Displays a ray starting at the first point and passing through the second."),
+                        ("circle", "<code>cx,cy,r</code>", "Displays a circle with centre <code>(cx,cy)</code> and radius <code>r</code>."),
+                        ("ellipse", "<code>cx,cy,rx,ry</code>", "Displays an ellipse with centre <code>(cx,cy)</code> and radii <code>rx</code> and <code>ry</code>."),
+                        ("polygon", "<code>x1,y1;x2,y2;...</code>", "Displays a polygon using the specified vertices."),
+                        ("angle", "<code>x1,y1;x2,y2;x3,y3</code>", "Displays an angle defined by three points."),
+                        ("function", "Mathematical expression", "Plots a mathematical function."),
+                    ], header=["Type", "Expression format", "Description"])
+                    + _p("Coordinates are written as comma-separated pairs (<code>x,y</code>). "
+                        "When an object requires multiple points, separate the points using semicolons "
+                        "(<code>;</code>). For an angle, the first point defines one arm, the second "
+                        "point is the vertex, and the third point defines the other arm.")
+                    + _p("<b>Functions:</b> functions can be plotted by specifying an expression using "
+                        "<code>x</code> as the variable:")
+                    + _code("""
+::coordinates
+|f|function|x**2|
 ::
-""")
-                + _p("In functions, the only allowed variable is <code>x</code>. Errors:")
-                + _table([
-                    ("Error rendering coordinate system, disallowed character(s) in expression!",
-                     "Disallowed characters were used."),
-                    ("Error rendering coordinate system, check syntax/expressions!",
-                     "Any other syntax error."),
-                ])),
+                """)
+                    + _p("By default, the function is plotted across the visible coordinate range. "
+                        "You can optionally specify a custom domain using "
+                        "<code>domain=start:end</code> as a fourth field:")
+                    + _code("""
+::coordinates
+|f|function|x**2|domain=-5:5|
+::
+                """)
+                    + _p("The specified domain determines the interval over which the function is evaluated. "
+                        "Multiple functions can be included in the same coordinate system. "
+                        "They are automatically assigned different colours.")
+                    + _p("<b>Example:</b> the following example demonstrates the available object types:")
+                    + _code("""
+::coordinates scale=10 title="Example coordinate system"
+|A|point|2,3|
+|B|point|-2,1|
+|v|vector|3,2|
+|AB|segment|2,3;-2,1|
+|l|line|1,2;-2,-1|
+|r|ray|-3,0;2,2|
+|c|circle|0,0,3|
+|e|ellipse|0,0,4,2|
+|P|polygon|-3,-2;0,3;3,-2|
+|α|angle|1,0;0,0;0,1|
+|f|function|x**2|
+|g|function|2*x+1|domain=-5:5|
+::
+                """)
+                    + _p("<b>Errors and limitations:</b>")
+                    + _table([
+                        ("Error rendering coordinate system, disallowed character(s) in expression!",
+                        "Disallowed characters were used in an expression."),
+                        ("Error rendering coordinate system, check syntax/expressions!",
+                        "Any other syntax or expression error."),
+                    ])
+                    + _p("Additional limitations:")
+                    + _code("""
+- Lines, rays and segments use the first two points provided.
+- Angles use the first three points provided.
+- Polygons require at least three points.
+- A line or ray cannot be drawn using two identical points.
+                """)),
 
             ("themes", "Themes",
                 _p("All themes are defined through CSS files. Select a theme and the light "
