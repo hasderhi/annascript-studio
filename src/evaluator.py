@@ -15,13 +15,20 @@ def normalize_expr(expr):
     ])
     return re.sub(rf'(\d)({identifiers})\b', r'\1*\2', expr)
 
+MAX_EXPR_LENGTH = 200
+
+def _safe_pow(a, b):
+    result = a ** b
+    if isinstance(result, complex):
+        raise ValueError()
+    return result
 
 OPS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
+    ast.Pow: _safe_pow,
     ast.Mod: operator.mod,
     ast.FloorDiv: operator.floordiv,
 }
@@ -37,12 +44,6 @@ def _log(x, base=None):
     if base is None:
         return math.log(x)
     return math.log(x, base)
-
-
-def _pow(a, b):
-    # Yes, ** already exists as an operator. This is here because my testers are
-    # people who insist on calling pow(x, 2) like it's 2004 and they're writing Java.
-    return a ** b
 
 
 def _sign(x):
@@ -72,9 +73,8 @@ FUNCS = {
     'hypot': math.hypot,
     'degrees': math.degrees,
     'radians': math.radians,
-    'pow': _pow,
+    'pow': _safe_pow,
 }
-
 
 class ExpressionError(Exception):
     # nope, stop trying
@@ -82,6 +82,8 @@ class ExpressionError(Exception):
 
 
 def safe_eval(expr, x_value):
+    if len(expr) > MAX_EXPR_LENGTH:
+        raise ExpressionError()
     try:
         node = ast.parse(expr, mode='eval')
     except SyntaxError:
@@ -96,7 +98,7 @@ def safe_eval(expr, x_value):
             if not isinstance(n.value, (int, float)):
                 # string/bytes/None
                 raise ExpressionError()
-            return n.value
+            return float(n.value)
 
         elif isinstance(n, ast.BinOp): # + - * / ** % //
             if type(n.op) not in OPS:
@@ -123,7 +125,7 @@ def safe_eval(expr, x_value):
             if func_name not in FUNCS:
                 raise ExpressionError()
             args = [_eval(arg) for arg in n.args]
-            return FUNCS[func_name](*args)
+            return float(FUNCS[func_name](*args))
 
         else:
             raise ExpressionError()
