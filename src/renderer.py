@@ -376,7 +376,8 @@ def render_chart(node: Macro) -> str:
             chart_html = "<div class='chart-error'>Unsupported chart type</div>"
         return f'<div class="chart {chart_type}">{title_html}{chart_html}</div>'
     except Exception:
-        f'<div>Error creating chart, check syntax!</div>'
+        return f'<div>Error creating chart, check syntax!</div>' # whoopsie, forgot to return the string...
+        
     
 
 def render_pie_chart(rows):
