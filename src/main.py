@@ -76,7 +76,7 @@ def user_data_path(*relative_path: str) -> str:
     return str(target_path)
 
 # Constants
-CURRENT_VERSION = "v1.3.0"
+CURRENT_VERSION = "v1.3.1"
 CURRENT_ANNASCRIPT_VERSION = "v1.2.3"
 
 # change these if you've forked the repo
